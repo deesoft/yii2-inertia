@@ -7,7 +7,6 @@ use yii\helpers\ArrayHelper;
 use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\web\Response;
-use yii\web\View;
 
 class Inertia
 {
@@ -104,10 +103,7 @@ class Inertia
         $id = ArrayHelper::getColumn($appParams, 'inertia.id', 'app');
         $content = Html::tag($tag, '', ['id' => $id, 'data' => ['page' => $data]]);
         $view = Yii::$app->view;
-        $view->on(View::EVENT_BEGIN_PAGE, function ()use ($view) {
-            $view->registerJsVar('toUrl', Helper::jsUrlTo());
-            Asset::register($view);
-        });
+        $view->registerJsVar('toUrl', Helper::jsUrlTo());
         $viewFile = ArrayHelper::getColumn($appParams, 'inertia.viewFile', '@dee/inertia/views/app.php');
         $response->data = $view->render($viewFile, ['content' => $content]);
         $response->format = 'html';
