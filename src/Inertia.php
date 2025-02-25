@@ -99,12 +99,12 @@ class Inertia
             return $response;
         }
 
-        $tag = ArrayHelper::getColumn($appParams, 'inertia.tag', 'div');
-        $id = ArrayHelper::getColumn($appParams, 'inertia.id', 'app');
+        $tag = ArrayHelper::getValue($appParams, 'inertia.tag', 'div');
+        $id = ArrayHelper::getValue($appParams, 'inertia.id', 'app');
         $content = Html::tag($tag, '', ['id' => $id, 'data' => ['page' => $data]]);
         $view = Yii::$app->view;
         $view->registerJsVar('toUrl', Helper::jsUrlTo());
-        $viewFile = ArrayHelper::getColumn($appParams, 'inertia.viewFile', '@dee/inertia/views/app.php');
+        $viewFile = ArrayHelper::getValue($appParams, 'inertia.viewFile', '@dee/inertia/views/app.php');
         $response->data = $view->render($viewFile, ['content' => $content]);
         $response->format = 'html';
         return $response;
