@@ -103,7 +103,6 @@ Add configuration to Application $params config.
             'serializer' => ['class' => dee\inertia\Serializer::class], //default
             'encript_history' => true, // default false
             'vite_entry_file' => 'client/app.js', // default
-            'app_title' => 'My App', // default My Application
         ],
         'inertia.shared' => [
             'user' => function(){

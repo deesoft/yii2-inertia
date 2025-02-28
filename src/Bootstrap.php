@@ -16,6 +16,7 @@ use yii\web\Response;
  */
 class Bootstrap implements BootstrapInterface
 {
+
     /**
      * {@inheritDoc}
      */
@@ -24,22 +25,35 @@ class Bootstrap implements BootstrapInterface
         if ($app instanceof Application) {
             $app->on(Application::EVENT_BEFORE_REQUEST, function () {
                 $request = Yii::$app->getRequest();
+                $parsers = [
+                    'application/json' => 'yii\web\JsonParser',
+                    'multipart/form-data' => 'yii\web\MultipartFormDataParser'
+                ];
+                foreach ($parsers as $format => $parser) {
+                    if (!isset($request->parsers[$format])) {
+                        $request->parsers[$format] = $parser;
+                    }
+                }
                 $headers = $request->headers;
                 if ($headers->has(Header::INERTIA)) {
                     Yii::$app->set('errorHandler', ['class' => ErrorHandler::class]);
                 }
                 if (!$headers->has($request->csrfHeader) && $headers->has(Header::AXIOS_CSRF_HEADER) && !in_array($request->method, $request->csrfTokenSafeMethods, true)) {
                     $value = $headers->get(Header::AXIOS_CSRF_HEADER);
-                    $data = Yii::$app->getSecurity()->validateData($value, $request->cookieValidationKey);
-                    if ($data !== false) {
-                        if (defined('PHP_VERSION_ID') && PHP_VERSION_ID >= 70000) {
-                            $data = @unserialize($data, ['allowed_classes' => false]);
-                        } else {
-                            $data = @unserialize($data);
+                    if ($request->enableCookieValidation) {
+                        $data = Yii::$app->getSecurity()->validateData($value, $request->cookieValidationKey);
+                        if ($data !== false) {
+                            if (defined('PHP_VERSION_ID') && PHP_VERSION_ID >= 70000) {
+                                $data = @unserialize($data, ['allowed_classes' => false]);
+                            } else {
+                                $data = @unserialize($data);
+                            }
+                            if (is_array($data) && isset($data[0], $data[1]) && $data[0] === Header::AXIOS_CSRF_PARAM) {
+                                $headers->add($request->csrfHeader, $data[1]);
+                            }
                         }
-                        if (is_array($data) && isset($data[0], $data[1]) && $data[0] === Header::AXIOS_CSRF_PARAM) {
-                            $headers->add($request->csrfHeader, $data[1]);
-                        }
+                    } else {
+                        $headers->add($request->csrfHeader, $value);
                     }
                 }
 
