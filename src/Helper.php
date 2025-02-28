@@ -69,8 +69,8 @@ class Helper
                     $row['paramRules'][$key] = new JsExpression(Html::escapeJsRegularExpression($value));
                 }
             }
-        } 
-        
+        }
+
         foreach (['paramRules', 'defaults', 'routeParams', 'placeholders'] as $prop) {
             if(empty($row[$prop])){
                 $row[$prop] = (object)[];
@@ -122,9 +122,10 @@ class Helper
         $rules = Json::htmlEncode(static::getUrlRules());
         $js = <<<JS
 (() => {
-    const suffix = {$suffix};
-    const baseUrl = {$baseUrl};
-    const rules = {$rules};
+    const suffix = $suffix;
+    const baseUrl = $baseUrl;
+    const rules = $rules;
+    const caches = {};
 
     function _stringify(obj, prefix = "") {
         return Object.keys(obj)
@@ -232,37 +233,46 @@ class Helper
     return function (path, params, method) {
         path = path.replace(/^\/+/, '').replace(/\/+$/, '');
         method = method ? method.toUpperCase() : 'GET';
+        const keyCache = method + ':' + path + '?' + stringify(params || {});
+        if (typeof caches[keyCache] !== 'undefined') {
+            return caches[keyCache];
+        }
         let url = false;
         for (const rule of rules) {
             if ((url = createUrl(rule, path, params, method)) !== false) {
                 break;
             }
         }
+        let result;
         if (url !== false) {
             if (url.includes("://")) {
                 const pos = url.indexOf("/", 8); // Find first '/' after 'https://'
                 if (baseUrl !== "" && pos !== -1) {
-                    return url.slice(0, pos) + baseUrl + url.slice(pos);
+                    result = url.slice(0, pos) + baseUrl + url.slice(pos);
+                } else {
+                    result = url + baseUrl;
                 }
-                return url + baseUrl;
             } else if (url.startsWith("//")) {
                 const pos = url.indexOf("/", 2); // Find first '/' after '//'
                 if (baseUrl !== "" && pos !== -1) {
-                    return url.slice(0, pos) + baseUrl + url.slice(pos);
+                    result = url.slice(0, pos) + baseUrl + url.slice(pos);
+                } else {
+                    result = url + baseUrl;
                 }
-                return url + baseUrl;
+            } else {
+                url = url.replace(/^\/+/, ""); // Remove leading slashes
+                result = `\${baseUrl}/\${url}`;
             }
-
-            url = url.replace(/^\/+/, ""); // Remove leading slashes
-            return `\${baseUrl}/\${url}`;
+        } else {
+            url = path + (suffix || '');
+            let query = params ? stringify(params) : '';
+            if (query) {
+                url += '?' + query;
+            }
+            result = `\${baseUrl}/\${url}`;
         }
-
-        url = path + (suffix || '');
-        let query = params ? stringify(params) : '';
-        if (query) {
-            url += '?' + query;
-        }
-        return `\${baseUrl}/\${url}`;
+        caches[keyCache] = result;
+        return result;
     }
 })()
 JS;
