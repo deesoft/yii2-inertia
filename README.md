@@ -113,3 +113,12 @@ Add configuration to Application $params config.
         ],
     ],
 ```
+
+Create Url
+----------
+Use function ```toUrl``` to generate url from route. It's equivalent with ```yii\helpers\Url::to()```.
+```js
+const {toUrl} = window;
+
+const url = toUrl('product/view', {id:row.id}); // equivalent Url::to(['/product/view', 'id'=>$row->id])
+```

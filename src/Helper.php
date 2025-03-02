@@ -6,6 +6,7 @@ use ReflectionClass;
 use Yii;
 use yii\helpers\Html;
 use yii\helpers\Json;
+use yii\helpers\Url;
 use yii\web\CompositeUrlRule;
 use yii\web\JsExpression;
 use yii\web\UrlRule;
@@ -120,11 +121,13 @@ class Helper
         $suffix = Json::htmlEncode($manager->suffix);
         $baseUrl = Json::htmlEncode($manager->showScriptName ? $manager->getScriptUrl() : $manager->getBaseUrl());
         $rules = Json::htmlEncode(static::getUrlRules());
+        $home = Json::htmlEncode(Url::home());
         $js = <<<JS
 (() => {
     const suffix = $suffix;
     const baseUrl = $baseUrl;
     const rules = $rules;
+    const home = $home;
     const caches = {};
 
     function _stringify(obj, prefix = "") {
@@ -277,11 +280,12 @@ class Helper
 
     const methods = ['get', 'head', 'post', 'put', 'patch', 'delete'];
     toUrl.base = baseUrl;
-    toUrl.home = baseUrl + '/';
+    toUrl.home = home;
     for(const method of methods){
         toUrl[method] = (path, params) => toUrl(path, params, method);
     }
     toUrl.back = () => window.history.back();
+    toUrl.public = (asset) => `\${baseUrl}/\${(asset||'').replace(/^\/+/, '')}`;
     return toUrl;
 })()
 JS;
