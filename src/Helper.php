@@ -230,7 +230,7 @@ class Helper
         return url;
     }
 
-    return function (path, params, method) {
+    const toUrl = (path, params, method) => {
         path = path.replace(/^\/+/, '').replace(/\/+$/, '');
         method = method ? method.toUpperCase() : 'GET';
         const keyCache = method + ':' + path + '?' + stringify(params || {});
@@ -273,7 +273,14 @@ class Helper
         }
         caches[keyCache] = result;
         return result;
+    };
+
+    const methods = ['get', 'head', 'post', 'put', 'patch', 'delete'];
+    toUrl.base = baseUrl;
+    for(const method of methods){
+        toUrl[method] = (path, params) => toUrl(path, params, method);
     }
+    return toUrl;
 })()
 JS;
         return new JsExpression($js);
