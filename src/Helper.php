@@ -100,17 +100,6 @@ class Helper
         }
     }
 
-    public static function getUrlManagerVar()
-    {
-        $manager = Yii::$app->urlManager;
-        return [
-            'rules' => static::getUrlRules(),
-            'suffix' => $manager->suffix,
-            'baseUrl' => $manager->showScriptName ? $manager->getScriptUrl() : $manager->getBaseUrl(),
-            'home' => $manager->showScriptName ? $manager->getScriptUrl() : $manager->getBaseUrl() . '/',
-        ];
-    }
-
     /**
      *
      * @return JsExpression
@@ -122,12 +111,12 @@ class Helper
         $baseUrl = Json::htmlEncode($manager->showScriptName ? $manager->getScriptUrl() : $manager->getBaseUrl());
         $rules = Json::htmlEncode(static::getUrlRules());
         $home = Json::htmlEncode(Url::home());
+        $base = Json::htmlEncode($manager->getBaseUrl());
         $js = <<<JS
 (() => {
     const suffix = $suffix;
     const baseUrl = $baseUrl;
     const rules = $rules;
-    const home = $home;
     const caches = {};
 
     function _stringify(obj, prefix = "") {
@@ -279,13 +268,13 @@ class Helper
     };
 
     const methods = ['get', 'head', 'post', 'put', 'patch', 'delete'];
-    toUrl.base = baseUrl;
-    toUrl.home = home;
+    toUrl.base = $base;
+    toUrl.home = $home;
     for(const method of methods){
         toUrl[method] = (path, params) => toUrl(path, params, method);
     }
     toUrl.back = () => window.history.back();
-    toUrl.public = (asset) => `\${baseUrl}/\${(asset||'').replace(/^\/+/, '')}`;
+    toUrl.public = (asset) => $base + '/' + (asset||'').replace(/^\/+/, '');
     return toUrl;
 })()
 JS;
