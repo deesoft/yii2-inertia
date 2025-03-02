@@ -277,6 +277,7 @@ class Helper
 
     const methods = ['get', 'head', 'post', 'put', 'patch', 'delete'];
     toUrl.base = baseUrl;
+    toUrl.home = baseUrl + '/';
     for(const method of methods){
         toUrl[method] = (path, params) => toUrl(path, params, method);
     }
