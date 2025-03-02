@@ -280,6 +280,7 @@ class Helper
     for(const method of methods){
         toUrl[method] = (path, params) => toUrl(path, params, method);
     }
+    toUrl.back = () => window.history.back();
     return toUrl;
 })()
 JS;
