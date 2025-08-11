@@ -11,12 +11,14 @@
         }
     ],
     "require": {
-        "php": ">=5.5.0",
-        "yiisoft/yii2": "~2.0.0"
+        "php": ">=7.0",
+        "yiisoft/yii2": "~2.0.50",
+        "phpspec/php-diff": "^1.1.0"
     },
     "autoload": {
         "psr-4": {
-            "dee\\inertia\\": "src"
+            "dee\\inertia\\": "src",
+            "dee\\inertia\\gii\\": "gii"
         }
     },
     "extra": {

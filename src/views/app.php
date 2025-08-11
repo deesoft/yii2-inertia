@@ -1,12 +1,10 @@
 <?php
 
-use dee\inertia\ViteAsset;
 use yii\helpers\Html;
 use yii\web\View;
 
 /** @var View $this */
 /** @var string $content */
-ViteAsset::register($this);
 $title = Yii::$app->name;
 ?>
 <?php $this->beginPage(); ?>

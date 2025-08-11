@@ -1,129 +1,19 @@
-<?php
-
-namespace dee\inertia;
-
-use ReflectionClass;
-use Yii;
-use yii\helpers\Html;
-use yii\helpers\Json;
-use yii\helpers\Url;
-use yii\web\CompositeUrlRule;
-use yii\web\JsExpression;
-use yii\web\UrlRule;
-
-/**
- * Description of Helper
- *
- * @author Misbahul D Munir <misbahuldmunir@gmail.com>
- * @since 1.0
- */
-class Helper
-{
-
-    /**
-     *
-     * @return array
-     */
-    public static function getUrlRules()
-    {
-        $result = [];
-        foreach (Yii::$app->urlManager->rules as $rule) {
-            if ($rule instanceof UrlRule) {
-                $result[] = self::getRuleInfo($rule);
-            } elseif ($rule instanceof CompositeUrlRule) {
-                self::getRuleRecursive($rule, $result);
-            }
-        }
-        return $result;
-    }
-
-    /**
-     *
-     * @param UrlRule $rule
-     * @return array
-     */
-    protected static function getRuleInfo($rule)
-    {
-        $ref = new ReflectionClass($rule);
-        $props = ['placeholders', '_template', '_routeRule', '_paramRules', '_routeParams'];
-        $row = [
-            //'pattern' => $rule->pattern,
-            'route' => $rule->route,
-            'verb' => $rule->verb,
-            'suffix' => $rule->suffix,
-            'encodeParams' => $rule->encodeParams,
-            'host' => $rule->host,
-            'defaults' => $rule->defaults,
-        ];
-        foreach ($props as $name) {
-            $prop = $ref->getProperty($name);
-            $prop->setAccessible(true);
-            $row[ltrim($name, '_')] = $prop->getValue($rule);
-        }
-        if ($row['routeRule']) {
-            $regex = Html::escapeJsRegularExpression($row['routeRule']);
-            $row['routeRule'] = new JsExpression(str_replace('?P<', '?<', $regex));
-        }
-        if ($row['paramRules']) {
-            foreach ($row['paramRules'] as $key => $value) {
-                if ($value) {
-                    $row['paramRules'][$key] = new JsExpression(Html::escapeJsRegularExpression($value));
-                }
-            }
-        }
-
-        foreach (['paramRules', 'defaults', 'routeParams', 'placeholders'] as $prop) {
-            if(empty($row[$prop])){
-                $row[$prop] = (object)[];
-            }
-        }
-        return $row;
-    }
-
-    /**
-     *
-     * @param CompositeUrlRule $rule
-     * @param array $result
-     */
-    protected static function getRuleRecursive($rule, &$result)
-    {
-        $ref = new ReflectionClass($rule);
-        $prop = $ref->getProperty('rules');
-        $prop->setAccessible(true);
-        $rules = $prop->getValue($rule);
-        foreach ($rules as $child) {
-            if ($child instanceof UrlRule) {
-                $result[] = self::getRuleInfo($rule);
-            } elseif ($child instanceof CompositeUrlRule) {
-                self::getRuleRecursive($child, $result);
-            }
-        }
-    }
-
-    /**
-     *
-     * @return JsExpression
-     */
-    public static function jsUrlTo()
-    {
-        $manager = Yii::$app->urlManager;
-        $suffix = Json::htmlEncode($manager->suffix);
-        $baseUrl = Json::htmlEncode($manager->showScriptName ? $manager->getScriptUrl() : $manager->getBaseUrl());
-        $rules = Json::htmlEncode(static::getUrlRules());
-        $home = Json::htmlEncode(Url::home());
-        $base = Json::htmlEncode($manager->getBaseUrl());
-        $js = <<<JS
-(() => {
-    const suffix = $suffix;
-    const baseUrl = $baseUrl;
-    const rules = $rules;
+function initYiiUrl(urlManager) {
+    const { suffix, baseUrl, rules, base, home } = {
+        rules: [],
+        suffix: null,
+        baseUrl: '',
+        base: '',
+        home: '/',
+        ...(urlManager || {}),
+    };
     const caches = {};
 
     function _stringify(obj, prefix = "") {
         return Object.keys(obj)
             .map(key => {
                 const value = obj[key];
-                const prefixedKey = prefix ? `\${prefix}[\${key}]` : key;
+                const prefixedKey = prefix ? `${prefix}[${key}]` : key;
                 if (typeof value === "object") {
                     return _stringify(value, prefixedKey);
                 } else {
@@ -132,8 +22,9 @@ class Helper
             })
             .join("&");
     }
-
-    const stringify = window.stringify || _stringify;
+    function stringify(obj){
+        return window.stringify ? window.stringify(obj) : _stringify(obj);
+    }
 
     function trimSlashes(url) {
         if (/^\/\//.test(url)) {
@@ -174,16 +65,16 @@ class Helper
                 continue;
             }
             if (_params[name] === undefined || _params[name] === null) {
-                if (typeof rule.placeholders[name] != 'undefined' && `\${value}` == '') {
+                if (typeof rule.placeholders[name] != 'undefined' && `${value}` == '') {
                     _params[name] = '';
                 } else {
                     return false;
                 }
             }
-            if (`\${_params[name]}` == `\${value}`) {
+            if (`${_params[name]}` == `${value}`) {
                 delete _params[name];
                 if (typeof rule.paramRules[name] != 'undefined') {
-                    tr[`<\${name}>`] = '';
+                    tr[`<${name}>`] = '';
                 }
             } else if (typeof rule.paramRules[name] == 'undefined') {
                 return false;
@@ -192,7 +83,7 @@ class Helper
 
         for (const [name, regex] of Object.entries(rule.paramRules)) {
             if (typeof _params[name] != 'undefined' && !Array.isArray(_params[name]) && (!regex || regex.test(_params[name]))) {
-                tr[`<\${name}>`] = rule.encodeParams ? encodeURIComponent(_params[name]) : _params[name];
+                tr[`<${name}>`] = rule.encodeParams ? encodeURIComponent(_params[name]) : _params[name];
                 delete _params[name];
             } else {
                 return false;
@@ -222,7 +113,7 @@ class Helper
         return url;
     }
 
-    const toUrl = (path, params, method) => {
+    const yiiUrl = (path, params, method) => {
         path = path.replace(/^\/+/, '').replace(/\/+$/, '');
         method = method ? method.toUpperCase() : 'GET';
         const keyCache = method + ':' + path + '?' + stringify(params || {});
@@ -253,7 +144,7 @@ class Helper
                 }
             } else {
                 url = url.replace(/^\/+/, ""); // Remove leading slashes
-                result = `\${baseUrl}/\${url}`;
+                result = `${baseUrl}/${url}`;
             }
         } else {
             url = path + (suffix || '');
@@ -261,23 +152,19 @@ class Helper
             if (query) {
                 url += '?' + query;
             }
-            result = `\${baseUrl}/\${url}`;
+            result = `${baseUrl}/${url}`;
         }
         caches[keyCache] = result;
         return result;
     };
 
     const methods = ['get', 'head', 'post', 'put', 'patch', 'delete'];
-    toUrl.base = $base;
-    toUrl.home = $home;
-    for(const method of methods){
-        toUrl[method] = (path, params) => toUrl(path, params, method);
+    yiiUrl.base = base;
+    yiiUrl.home = home;
+    for (const method of methods) {
+        yiiUrl[method] = (path, params) => yiiUrl(path, params, method);
     }
-    toUrl.back = () => window.history.back();
-    toUrl.public = (asset) => $base + '/' + (asset||'').replace(/^\/+/, '');
-    return toUrl;
-})()
-JS;
-        return new JsExpression($js);
-    }
-}
+    yiiUrl.back = () => window.history.back();
+    yiiUrl.public = (asset) => `${base}/` + (asset || '').replace(/^\/+/, '');
+    return yiiUrl;
+};

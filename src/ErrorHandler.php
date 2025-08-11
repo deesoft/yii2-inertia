@@ -2,13 +2,17 @@
 
 namespace dee\inertia;
 
+use Yii;
+use yii\web\ErrorHandler as BaseErrorHandler;
+use const YII_ENV_TEST;
+
 /**
  * Description of ErrorHandler
  *
  * @author Misbahul D Munir <misbahuldmunir@gmail.com>
  * @since 1.0
  */
-class ErrorHandler extends \yii\web\ErrorHandler
+class ErrorHandler extends BaseErrorHandler
 {
 
     /**
@@ -17,7 +21,7 @@ class ErrorHandler extends \yii\web\ErrorHandler
      */
     protected function shouldRenderSimpleHtml()
     {
-        return YII_ENV_TEST || (\Yii::$app->request->getIsAjax() && !\Yii::$app->request->headers->has(Header::INERTIA));
+        return YII_ENV_TEST || (Yii::$app->request->getIsAjax() && !Yii::$app->request->headers->has(Header::INERTIA));
     }
 }
 

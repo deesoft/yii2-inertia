@@ -3,7 +3,6 @@
 namespace dee\inertia;
 
 use Yii;
-use yii\helpers\ArrayHelper;
 use yii\web\AssetBundle;
 
 /**
@@ -14,20 +13,22 @@ use yii\web\AssetBundle;
  */
 class ViteAsset extends AssetBundle
 {
-    public $baseUrl = '@web/dist';
+    public $sourcePath = '@client/dist';
+    public $bootstrap = 'client/app.js';
     public function init()
     {
-        $port = env('VITE_PORT', 5173);
-        $bootstrap = ArrayHelper::getValue(Yii::$app->params, 'inertia.vite_entry_file', 'client/app.js');
-        if (!env('VITE_PROD') && @fopen("http://localhost:$port/{$bootstrap}", 'r')) {
+        $port = Inertia::config('vite_port');
+        $bootstrap = $this->bootstrap;
+        if (!Inertia::config('vite_prod') && @fopen("http://localhost:$port/{$bootstrap}", 'r')) {
+            $this->sourcePath = null;
             $this->js = [
                 ["http://localhost:$port/@vite/client", 'type' => 'module'],
                 ["http://localhost:$port/{$bootstrap}", 'type' => 'module'],
             ];
         } else {
-            $manifest = Yii::getAlias('@webroot/dist/.vite/manifest.json');
-            if (file_exists($manifest)) {
-                $manifest = json_decode(file_get_contents($manifest), true);
+            $manifest_file = Yii::getAlias("{$this->sourcePath}/.vite/manifest.json");
+            if (file_exists($manifest_file)) {
+                $manifest = json_decode(file_get_contents($manifest_file), true);
                 if (isset($manifest[$bootstrap])) {
                     $asset = $manifest[$bootstrap];
                     $this->js = [
@@ -37,7 +38,13 @@ class ViteAsset extends AssetBundle
                         $this->css = (array)$asset['css'];
                     }
                 }
+                $destPath = Yii::$app->assetManager->getPublishedPath($this->sourcePath);
+                if(is_dir($destPath)){
+                    $this->publishOptions['forceCopy'] = !file_exists("$destPath/.vite/manifest.json")
+                        || filemtime("$destPath/.vite/manifest.json") < filemtime($manifest_file);
+                }
             }
         }
+        parent::init();
     }
 }

@@ -89,6 +89,13 @@ class Bootstrap implements BootstrapInterface
                     }
                 }
             });
+        } else {
+            if (!isset($app->controllerMap['inertia'])) {
+                $app->controllerMap['inertia'] = ['class' => InertiaController::class];
+            }
+        }
+        if (Yii::getAlias('@client', false) === false) {
+            Yii::setAlias('@client', dirname(Yii::getAlias('@vendor')) . '/client');
         }
     }
 }

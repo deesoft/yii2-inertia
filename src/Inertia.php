@@ -2,11 +2,13 @@
 
 namespace dee\inertia;
 
+use Closure;
 use Yii;
 use yii\helpers\ArrayHelper;
 use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\web\Response;
+use yii\web\View;
 
 class Inertia
 {
@@ -53,6 +55,32 @@ class Inertia
     }
 
     /**
+     * @param string $key
+     * @param mixed $default
+     * @return mixed 
+     */
+    public static function config($key, $default = null)
+    {
+        $defaultConfigs = [
+            'tag' => 'div',
+            'id' => 'app',
+            'view_file' => '@dee/inertia/views/app.php',
+            'encript_history' => false,
+            'shared' => [],
+            'serializer' => [],
+            'register_vite_asset' => true,
+            'register_yii_url_asset' => true,
+            'vite_port' => '5173',
+            'vite_prod' => false,
+        ];
+        if (($value = ArrayHelper::getValue(Yii::$app->params, "inertia.$key")) !== null) {
+            return $value;
+        }
+        $env_key = strcmp($key, 'vite_') === 0 ? strtoupper($key) : 'INERTIA_' . strtoupper($key);
+        return ArrayHelper::getValue($defaultConfigs, $key, $_ENV[$env_key] ?? $default);
+    }
+
+    /**
      * @param string $component
      * @param array $params
      * @return Response
@@ -61,9 +89,8 @@ class Inertia
     {
         $request = Yii::$app->request;
         $response = Yii::$app->response;
-        $appParams = Yii::$app->params;
 
-        $shared = ArrayHelper::getValue($appParams, 'inertia.shared', []);
+        $shared = static::config('shared');
         $params = array_merge($shared, static::$shared, $params);
 
         list($props, $deferredProps, $mergeProps) = static::resolvePage($component, $params);
@@ -80,6 +107,7 @@ class Inertia
                 $props['errors'] = (array) $errors;
             }
         }
+        $props['$r'] = [Yii::$app->controller->route, $request->getQueryParams()];
 
         $data = [
             'component' => $component,
@@ -88,7 +116,7 @@ class Inertia
             'version' => static::getVersion(),
             'deferredProps' => $deferredProps,
             'mergeProps' => $mergeProps,
-            'encryptHistory' => static::$encriptHistory || ArrayHelper::getValue($appParams, 'inertia.encript_history', false),
+            'encryptHistory' => static::$encriptHistory || static::config('encript_history'),
             'clearHistory' => Yii::$app->session->getFlash('inertia_clear_history'),
         ];
 
@@ -99,15 +127,41 @@ class Inertia
             return $response;
         }
 
-        $tag = ArrayHelper::getValue($appParams, 'inertia.tag', 'div');
-        $id = ArrayHelper::getValue($appParams, 'inertia.id', 'app');
+        $tag = static::config('tag');
+        $id = static::config('id');
         $content = Html::tag($tag, '', ['id' => $id, 'data' => ['page' => $data]]);
         $view = Yii::$app->view;
-        $view->registerJsVar('toUrl', Helper::jsUrlTo());
-        $viewFile = ArrayHelper::getValue($appParams, 'inertia.viewFile', '@dee/inertia/views/app.php');
+        static::registerJs($view);
+        $viewFile = static::config('view_file');
         $response->data = $view->render($viewFile, ['content' => $content]);
         $response->format = 'html';
         return $response;
+    }
+
+    /**
+     *
+     * @param View $view
+     */
+    protected static function registerJs($view)
+    {
+        if (static::config('register_yii_url_asset')) {
+            list(, $urlAsset) = $view->assetManager->publish(__DIR__ . '/assets/url.js');
+            $view->registerJsFile($urlAsset, ['position' => View::POS_HEAD]);
+
+            $manager = Yii::$app->urlManager;
+            $js = sprintf('var yiiUrl = initYiiUrl(%s);', \yii\helpers\Json::htmlEncode([
+                    'suffix' => $manager->suffix,
+                    'baseUrl' => $manager->showScriptName ? $manager->getScriptUrl() : $manager->getBaseUrl(),
+                    'rules' => Route::getUrlRules(),
+                    'home' => Url::home(),
+                    'base' => $manager->getBaseUrl(),
+            ]));
+            $view->registerJs($js, View::POS_HEAD);
+        }
+
+        if (static::config('register_vite_asset')) {
+            ViteAsset::register($view);
+        }
     }
 
     /**
@@ -132,7 +186,7 @@ class Inertia
                 } elseif ($value instanceof AlwaysProp) {
                     $props[$key] = call_user_func($value);
                 } elseif ($value instanceof LazyProp) {
-                    if (in_array($key, $only)) {
+                    if ($only && in_array($key, $only)) {
                         $props[$key] = call_user_func($value);
                     }
                 } elseif ((!$only || in_array($key, $only)) && (!$except || !in_array($key, $except))) {
@@ -141,7 +195,7 @@ class Inertia
                         if (!in_array($key, $reset)) {
                             $mergeProps[] = $key;
                         }
-                    } elseif ($value instanceof \Closure || is_callable($value)) {
+                    } elseif ($value instanceof Closure || is_callable($value)) {
                         $props[$key] = call_user_func($value);
                     } else {
                         $props[$key] = $value;
@@ -154,7 +208,7 @@ class Inertia
                     $deferredProps[$value->group][] = $key;
                 } elseif ($value instanceof LazyProp) {
                     continue;
-                } elseif ($value instanceof BaseProp || $value instanceof \Closure || is_callable($value)) {
+                } elseif ($value instanceof BaseProp || $value instanceof Closure || is_callable($value)) {
                     $props[$key] = call_user_func($value);
                 } else {
                     $props[$key] = $value;
@@ -170,11 +224,11 @@ class Inertia
     public static function serializer()
     {
         if (static::$serializer === null) {
-            $config = ArrayHelper::getValue(Yii::$app->params, 'inertia.serializer', []);
+            $config = static::config('serializer');
             if (is_string($config)) {
                 $config = ['class' => $config];
             }
-            if(is_array($config) && !isset($config['class'])){
+            if (is_array($config) && !isset($config['class'])) {
                 $config['class'] = Serializer::class;
             }
             static::$serializer = Yii::createObject($config);
@@ -184,7 +238,7 @@ class Inertia
 
     /**
      *
-     * @param \Closure $callback
+     * @param Closure $callback
      * @param string $group
      * @param bool $merge 
      * @return DeferProp
@@ -196,7 +250,7 @@ class Inertia
 
     /**
      *
-     * @param mixed|\Closure $value
+     * @param mixed|Closure $value
      * @return MergeProp
      */
     public static function merge($value)
@@ -206,7 +260,7 @@ class Inertia
 
     /**
      *
-     * @param mixed|\Closure $value
+     * @param mixed|Closure $value
      * @return AlwaysProp
      */
     public static function always($value)
@@ -216,7 +270,7 @@ class Inertia
 
     /**
      *
-     * @param \Closure $value
+     * @param Closure $value
      * @return LazyProp
      */
     public static function lazy($value)

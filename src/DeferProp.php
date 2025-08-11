@@ -25,4 +25,10 @@ class DeferProp extends BaseProp
         $this->shouldMerge = $value;
         return $this;
     }
+
+    public function group($group)
+    {
+        $this->group = $group;
+        return $this;
+    }
 }

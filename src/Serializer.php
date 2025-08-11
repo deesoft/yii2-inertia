@@ -19,7 +19,7 @@ class Serializer extends RestSerializer
     /**
      * {@inheritDoc}
      */
-    public $linksEnvelope;
+    public $linksEnvelope = 'links';
     /**
      * {@inheritDoc}
      */
