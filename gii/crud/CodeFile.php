@@ -1,6 +1,6 @@
 <?php
 
-namespace dee\inertia\gii;
+namespace dee\inertia\gii\crud;
 
 use yii\helpers\Html;
 
@@ -12,7 +12,6 @@ use yii\helpers\Html;
  */
 class CodeFile extends \yii\gii\CodeFile
 {
-
 
     /**
      * Returns preview or false if it cannot be rendered

@@ -5,7 +5,7 @@
  * @license http://www.yiiframework.com/license/
  */
 
-namespace dee\inertia\gii;
+namespace dee\inertia\gii\crud;
 
 use Yii;
 use yii\db\ActiveRecord;
@@ -26,9 +26,7 @@ use yii\helpers\StringHelper;
  */
 class Generator extends \yii\gii\generators\crud\Generator
 {
-    public $templates = [
-        'popup' => '@dee/inertia/gii/popup'
-    ];
+
     public $controllerID;
     public $inlineSearch;
     public $clientPath = '@client/pages';
@@ -36,6 +34,14 @@ class Generator extends \yii\gii\generators\crud\Generator
     public $modelNsSearch = [];
     private $_controllerClass;
 
+    /**
+     * @inheritdoc
+     */
+    public function init()
+    {
+        $this->templates['popup'] = __DIR__ . '/popup';
+        parent::init();
+    }
 
     /**
      * @inheritdoc

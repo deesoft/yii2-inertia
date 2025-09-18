@@ -44,9 +44,9 @@ class Bootstrap implements BootstrapInterface
                         $data = Yii::$app->getSecurity()->validateData($value, $request->cookieValidationKey);
                         if ($data !== false) {
                             if (defined('PHP_VERSION_ID') && PHP_VERSION_ID >= 70000) {
-                                $data = @unserialize($data, ['allowed_classes' => false]);
+                                $data = unserialize($data, ['allowed_classes' => false]);
                             } else {
-                                $data = @unserialize($data);
+                                $data = unserialize($data);
                             }
                             if (is_array($data) && isset($data[0], $data[1]) && $data[0] === Header::AXIOS_CSRF_PARAM) {
                                 $headers->add($request->csrfHeader, $data[1]);

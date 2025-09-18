@@ -1,15 +1,22 @@
 import vuetify from './plugins/vuetify';
 import mainPlugin from './plugins/main';
-import DefaultLayout from './layouts/Default.vue';
+import layouts from './plugins/layouts';
 import { createInertiaApp } from '@inertiajs/vue3';
 import { createApp, h } from 'vue'
 
 import 'vuetify/lib/styles/main.sass';
 import './assets/css/app.css';
 
-function setDefaultLayout(page) {
-    if (page.default && typeof page.default.layout === 'undefined') {
-        page.default.layout = DefaultLayout;
+function applyLayout(page) {
+    if(page.default){
+        var layout = page.default.layout;
+        if(layout === undefined){
+            page.default.layout = layouts.default;
+        } else if(typeof layout === 'string'){
+            page.default.layout = layouts[layout];
+        } else if(layout === false){
+            page.default.layout = null;
+        }
     }
     return page;
 }
@@ -22,9 +29,9 @@ function resolvePageComponent(name) {
         throw new Error(`Page not found: ${path}`);
     }
     if (typeof page === 'function') {
-        return page().then(page => setDefaultLayout(page));
+        return page().then(page => applyLayout(page));
     } else {
-        return setDefaultLayout(page);
+        return applyLayout(page);
     }
 }
 createInertiaApp({

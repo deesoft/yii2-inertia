@@ -40,7 +40,7 @@ namespace <?= StringHelper::dirname(ltrim($generator->getControllerClass(), '\\'
 $uses = [
     'yii\web\Response',
     'Yii',
-    'ext\inertia\Inertia',
+    'dee\inertia\Inertia',
     ltrim($generator->modelClass, '\\'),
     'yii\web\NotFoundHttpException',
     ltrim($generator->baseControllerClass, '\\'),
@@ -69,6 +69,8 @@ class <?= $controllerClass ?> extends <?= StringHelper::basename($generator->bas
     protected function verbs()
     {
         return [
+            'create' => ['POST'],
+            'update' => ['POST'],
             'delete' => ['POST'],
         ];
     }
@@ -111,9 +113,8 @@ class <?= $controllerClass ?> extends <?= StringHelper::basename($generator->bas
      */
     public function actionView(<?= $actionParams ?>)
     {
-        return Inertia::render('<?= $viewPath ?>/view', [
-            'model' => $this->findModel(<?= $actionParams ?>),
-        ]);
+        $model = $this->findModel(<?= $actionParams ?>);
+        return $this->asJson($model);
     }
 
     /**
@@ -125,15 +126,12 @@ class <?= $controllerClass ?> extends <?= StringHelper::basename($generator->bas
     {
         $model = new <?= $modelClass ?>();
 
-        if ($this->request->isPost) {
-            if ($model->load($this->request->post(), '') && $model->save()) {
-                return $this->redirect(['view', <?= $urlParams ?>]);
-            }
+        $model->load($this->request->post(), '');
+        if($model->save()) {
+            return $this->asJson(true);
         }
-
-        return Inertia::render('<?= $viewPath ?>/create', [
-            'model' => $model,
-        ]);
+        $this->response->setStatusCode(422, 'Data Validation Failed.');
+        return $this->asJson($model->firstErrors);
     }
 
     /**
@@ -147,15 +145,12 @@ class <?= $controllerClass ?> extends <?= StringHelper::basename($generator->bas
     {
         $model = $this->findModel(<?= $actionParams ?>);
 
-        if ($this->request->isPost) {
-            if ($model->load($this->request->post(), '') && $model->save()) {
-                return $this->redirect(['view', <?= $urlParams ?>]);
-            }
+        $model->load($this->request->post(), '');
+        if($model->save()) {
+            return $this->asJson(true);
         }
-
-        return Inertia::render('<?= $viewPath ?>/update', [
-            'model' => $model,
-        ]);
+        $this->response->setStatusCode(422, 'Data Validation Failed.');
+        return $this->asJson($model->firstErrors);
     }
 
     /**

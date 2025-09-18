@@ -17,11 +17,13 @@ $urlParams = implode(', ', $urlParams);
 ?>
 <script setup>
 import { router } from "@inertiajs/vue3";
+import FormDlg from './FormDlg.vue';
 const {yiiUrl, confirm} = window;
 
 const props = defineProps({
     data: Object,    
 });
+const formDlg = useTemplateRef('formDlg');
 const columns = [
     {field:'no', title:'NO'},
 <?php 
@@ -60,19 +62,19 @@ function deleteRow(row){
                         <v-toolbar-items>
                             <QuerySearchText reload style="min-width: 250px;" ></QuerySearchText>
                         </v-toolbar-items>
-                        <v-btn density="compact" icon="mdi-plus" :to="yiiUrl('<?= $baseRoute ?>/create')"></v-btn>
+                        <v-btn density="compact" icon="mdi-plus" @click="formDlg.open()"></v-btn>
                     </v-toolbar>
                     <v-divider/>
                     <GridView :data="data" :columns="columns" reload>
-                        <template #d-no="row">{{ row._no }}</template>
+                        <template #d-no="row">{{ row.$no }}</template>
                         <template #d-action="row">
-                            <v-btn density="compact" size="small" icon="mdi-eye" :to="yiiUrl('<?= $baseRoute ?>/view', {<?= $urlParams ?>})"></v-btn>
-                            <v-btn density="compact" size="small" icon="mdi-pencil" :to="yiiUrl('<?= $baseRoute ?>/update', {<?= $urlParams ?>})"></v-btn>
+                            <v-btn density="compact" size="small" icon="mdi-pencil" @click="formDlg.open(row)"></v-btn>
                             <v-btn density="compact" size="small" icon="mdi-delete" @click="deleteRow(row)"></v-btn>                            
                         </template>
                     </GridView>
                 </v-card>
             </v-col>
         </v-row>
+        <FormDlg ref="formDlg"></FormDlg>
     </v-container>
 </template>

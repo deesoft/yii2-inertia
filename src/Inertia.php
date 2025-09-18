@@ -94,12 +94,12 @@ class Inertia
         $params = array_merge($shared, static::$shared, $params);
 
         list($props, $deferredProps, $mergeProps) = static::resolvePage($component, $params);
-        static::$errors = [];
         $props = static::serializer()->serialize($props);
         $errors = Yii::$app->session->getFlash('errors', []);
         foreach (static::$errors as $key => $value) {
             $errors[$key] = $value;
         }
+        static::$errors = [];
         if ($errors) {
             if ($request->headers->has(Header::ERROR_BAG)) {
                 $props['errors'][$request->headers->get(Header::ERROR_BAG)] = (array) $errors;
@@ -299,11 +299,11 @@ class Inertia
      */
     public static function getVersion()
     {
-        $manifest = Yii::getAlias('@webroot/dist/.vite/manifest.json');
-        if (file_exists($manifest)) {
-            return md5(filemtime($manifest));
+        $bundle = Yii::$app->assetManager->getBundle(ViteAsset::class, false);
+        if($bundle && $bundle instanceof ViteAsset){
+            return $bundle->getVersion();
         }
-        return md5(date('Y-m-d') . __FILE__);
+        return md5(Yii::getVersion() . Inertia::class);
     }
 
     /**
