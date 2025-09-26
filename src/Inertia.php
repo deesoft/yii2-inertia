@@ -2,13 +2,14 @@
 
 namespace dee\inertia;
 
-use Closure;
 use Yii;
-use yii\helpers\ArrayHelper;
-use yii\helpers\Html;
-use yii\helpers\Url;
-use yii\web\Response;
+use Closure;
 use yii\web\View;
+use yii\helpers\Url;
+use yii\helpers\Html;
+use yii\helpers\Json;
+use yii\web\Response;
+use yii\helpers\ArrayHelper;
 
 class Inertia
 {
@@ -22,15 +23,15 @@ class Inertia
      */
     public static $errors = [];
     protected static $shared = [];
-    protected static $encriptHistory = false;
+    protected static $encryptHistory = false;
 
     /**
      * Encript history
      * @param bool $value
      */
-    public static function encriptHistory($value = true)
+    public static function encryptHistory($value = true)
     {
-        self::$encriptHistory = $value;
+        self::$encryptHistory = $value;
     }
 
     /**
@@ -65,7 +66,7 @@ class Inertia
             'tag' => 'div',
             'id' => 'app',
             'view_file' => '@dee/inertia/views/app.php',
-            'encript_history' => false,
+            'encrypt_history' => false,
             'shared' => [],
             'serializer' => [],
             'register_vite_asset' => true,
@@ -116,7 +117,7 @@ class Inertia
             'version' => static::getVersion(),
             'deferredProps' => $deferredProps,
             'mergeProps' => $mergeProps,
-            'encryptHistory' => static::$encriptHistory || static::config('encript_history'),
+            'encryptHistory' => static::$encryptHistory || static::config('encrypt_history'),
             'clearHistory' => Yii::$app->session->getFlash('inertia_clear_history'),
         ];
 
@@ -149,7 +150,7 @@ class Inertia
             $view->registerJsFile($urlAsset, ['position' => View::POS_HEAD]);
 
             $manager = Yii::$app->urlManager;
-            $js = sprintf('var yiiUrl = initYiiUrl(%s);', \yii\helpers\Json::htmlEncode([
+            $js = sprintf('var yiiUrl = initYiiUrl(%s);', Json::htmlEncode([
                     'suffix' => $manager->suffix,
                     'baseUrl' => $manager->showScriptName ? $manager->getScriptUrl() : $manager->getBaseUrl(),
                     'rules' => Route::getUrlRules(),

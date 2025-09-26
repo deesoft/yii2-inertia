@@ -4,7 +4,7 @@ use yii\helpers\Html;
 use yii\helpers\StringHelper;
 
 /** @var yii\web\View $this */
-/** @var dee\inertia\gii\Generator $generator */
+/** @var dee\inertia\gii\crud\Generator $generator*/
 
 $modelClass = StringHelper::basename($generator->modelClass);
 $baseRoute = $generator->controllerID;
