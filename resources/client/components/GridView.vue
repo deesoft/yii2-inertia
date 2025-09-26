@@ -1,5 +1,5 @@
 <script setup>
-import { URL } from '@/composables/global';
+import { URL } from '@/composables/url';
 import Pagination from './Pagination.vue';
 import { computed } from 'vue';
 

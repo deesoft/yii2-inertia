@@ -1,0 +1,17 @@
+{
+    "name": "yii2-inertia",
+    "version": "1.0.0",
+    "type": "module",
+    "description": "Inertiajs resolve page",
+    "keywords": ["inertiajs", "vue3"],
+    "author": "Misbahul D Munir",
+    "license": "ISC",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/deesoft/yii2-inertia.git"
+    },
+    "main": "./src/vite-plugin.js",
+    "exports": {
+        "default":"./src/vite-plugin.js"
+    }
+}
