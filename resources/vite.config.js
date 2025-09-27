@@ -15,11 +15,12 @@ export default defineConfig(() => {
         plugins: [
             vue(),
             yiiInertia({
-                path: 'client/pages',
-                layout: {
+                pages: 'client/pages',
+                layouts: {
                     default: 'client/layouts/Default.vue',
                     main: 'client/layouts/Main.vue'
                 },
+                eager: true,
                 //output: 'client/resolve.js',
             }),
             AutoImport({
@@ -63,7 +64,7 @@ export default defineConfig(() => {
         build: {
             rollupOptions: {
                 input: [
-                    './client/app.js',
+                    'client/app.js',
                 ],
             },
             manifest: true,

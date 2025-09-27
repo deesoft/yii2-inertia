@@ -107,25 +107,25 @@ export default function InitApp(config){
     }
 
     if (typeof config === 'string') {
-        config = { path: config };
+        config = { pages: config };
     }
     const configs = Array.isArray(config) ? config : [config];
 
     const apps = [];
     configs.forEach(source => {
         if (typeof source === 'string') {
-            source = { path: source };
+            source = { pages: source };
         }
         const id = 'virtual:yii2-inertia' + (source.name ? '-' + source.name : '');
         const app = {
             id,
             mId: '\0' + id,
-            pages: listFiles(source.path),
+            pages: listFiles(source.pages),
             eager: source.eager,
         }
-        if (source.layout) {
+        if (source.layouts) {
             const layouts = [];
-            Object.entries(config.layout).forEach(([k, f]) => {
+            Object.entries(source.layouts).forEach(([k, f]) => {
                 k = /^\w+$/.test(k) ? k : JSON.stringify(k);
                 layouts.push([k, resolve(f)]);
             });
