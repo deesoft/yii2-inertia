@@ -17,8 +17,9 @@ $urlParams = implode(', ', $urlParams);
 ?>
 <script setup>
 import { router } from "@inertiajs/vue3";
+import {confirm} from "@/composable/global";
 import FormDlg from './FormDlg.vue';
-const {yiiUrl, confirm} = window;
+const {yiiUrl} = window;
 
 const props = defineProps({
     data: Object,    
@@ -37,11 +38,11 @@ $count++;
 ];
 
 function deleteRow(row){
-    if(confirm('Yakin akan menghapus data ini?')){
+    confirm('Yakin akan menghapus data ini?').then(() => {
         axios.post(yiiUrl.post('<?= $baseRoute ?>/delete', {<?= $urlParams ?>})).then(()=>{
             router.reload();
         });
-    }
+    });
 }
 </script>
 <template>
