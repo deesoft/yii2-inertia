@@ -151,7 +151,7 @@ class InertiaController extends Controller
         }
         foreach ($contents as $file => $content) {
             file_put_contents("$dest/$file", $content);
-            $this->stdout("Genetated file $file\n", Console::FG_GREEN);
+            $this->stdout("Generated file $file\n", Console::FG_GREEN);
         }
         $this->stdout("\nFiles were generated successfully!\n", Console::FG_GREEN);
     }
@@ -165,12 +165,12 @@ class InertiaController extends Controller
     protected function runCommand($cmd, $title)
     {
         echo "▶️ Menjalankan: $title ($cmd)\n";
-        $descriptorspec = [
+        $descriptor_spec = [
             0 => STDIN,
             1 => STDOUT,
             2 => STDERR
         ];
-        $process = proc_open($cmd, $descriptorspec, $pipes);
+        $process = proc_open($cmd, $descriptor_spec, $pipes);
         if (is_resource($process)) {
             return $process;
         } else {

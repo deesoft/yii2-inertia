@@ -4,6 +4,7 @@ namespace dee\inertia;
 
 use Yii;
 use Closure;
+use stdClass;
 use yii\web\View;
 use yii\helpers\Url;
 use yii\helpers\Html;
@@ -108,7 +109,7 @@ class Inertia
                 $props['errors'] = (array) $errors;
             }
         }
-        $props['$r'] = [Yii::$app->controller->route, $request->getQueryParams()];
+        $props['$r'] = [Yii::$app->controller->route, $request->getQueryParams() ? : new stdClass()];
 
         $data = [
             'component' => $component,

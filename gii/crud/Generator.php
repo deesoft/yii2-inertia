@@ -32,6 +32,7 @@ class Generator extends \yii\gii\generators\crud\Generator
     public $clientPath = '@client/pages';
     public $excludeColumns = ['created_at', 'created_by', 'updated_at', 'updated_by', 'is_deleted'];
     public $modelNsSearch = [];
+    public $viewList = false;
     private $_controllerClass;
 
     /**
@@ -74,7 +75,7 @@ class Generator extends \yii\gii\generators\crud\Generator
             [['controllerID'], 'match', 'pattern' => '/^[a-z][a-z0-9\\-\\/]*$/', 'message' => 'Only a-z, 0-9, dashes (-) and slashes (/) are allowed.'],
             [['searchModelClass'], 'validateNewClass'],
             [['modelClass'], 'validateModelClass'],
-            [['enableI18N', 'inlineSearch',], 'boolean'],
+            [['enableI18N', 'inlineSearch', 'viewList'], 'boolean'],
             [['messageCategory'], 'validateMessageCategory', 'skipOnEmpty' => false],
         ]);
     }
@@ -143,7 +144,7 @@ class Generator extends \yii\gii\generators\crud\Generator
     public function generate()
     {
         $controllerFile = Yii::getAlias('@' . str_replace('\\', '/', ltrim($this->getControllerClass(), '\\')) . '.php');
-        list($conditions, $sortAttrs, $gridColumns, $inputs, $forms) = $this->generateDefinition();
+        list($conditions, $sortAttrs, $gridColumns, $inputs, $forms, $views) = $this->generateDefinition();
         $files = [
             new CodeFile($controllerFile, $this->render('controller.php', [
                     'conditions' => $conditions,
@@ -168,6 +169,7 @@ class Generator extends \yii\gii\generators\crud\Generator
                         'inputs' => $inputs,
                         'forms' => $forms,
                         'modelName' => $modelName,
+                        'views' => $views,
                 ]));
             }
         }
@@ -179,11 +181,12 @@ class Generator extends \yii\gii\generators\crud\Generator
     {
         $columns = [];
         $inputs = [];
+        $views = [];
         $forms = [];
+        $class = $this->modelClass;
+        /** @var \yii\db\BaseActiveRecord $model  */
+        $model = new $class();
         if (($table = $this->getTableSchema()) === false) {
-            $class = $this->modelClass;
-            /** @var \yii\db\BaseActiveRecord $model  */
-            $model = new $class();
             foreach ($model->attributes() as $attribute) {
                 if (in_array($attribute, $this->excludeColumns)) {
                     continue;
@@ -197,6 +200,11 @@ class Generator extends \yii\gii\generators\crud\Generator
                     'density' => "compact",
                     'required' => $model->isAttributeRequired($attribute),
                     'type' => 'text',
+                    'field' => $attribute,
+                ];
+                $views[] = [
+                    'field' => $attribute,
+                    'label' => $model->getAttributeLabel($attribute),
                 ];
             }
         } else {
@@ -246,16 +254,20 @@ class Generator extends \yii\gii\generators\crud\Generator
                 if (!$skip) {
                     $inputs[] = [
                         'v-model' => "form.{$column->name}",
-                        'label' => Inflector::camel2words($column->name),
+                        'label' => $model->getAttributeLabel($column->name),
                         'variant' => "outlined",
                         'density' => "compact",
-                        'required' => !$column->allowNull,
+                        'required' => !$column->allowNull && $column->defaultValue === null,
                         'type' => $type,
                         'step' => $step,
                         ':error-messages' => "form.errors.{$column->name}",
                         'field' => $column->name,
                     ];
                 }
+                $views[] = [
+                    'field' => $column->name,
+                    'label' => $model->getAttributeLabel($column->name),
+                ];
             }
         }
 
@@ -327,7 +339,7 @@ if (\$q = \$request->get('q')) {
         }\n\n
 TXT;
         }
-        return [$conditions, $sortAttrs, $gridColumns, $inputs, $forms];
+        return [$conditions, $sortAttrs, $gridColumns, $inputs, $forms, $views];
     }
 
     /**

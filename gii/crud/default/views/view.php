@@ -8,19 +8,14 @@ use yii\helpers\StringHelper;
 
 $modelClass = StringHelper::basename($generator->modelClass);
 $baseRoute = $generator->controllerID;
+
+$viewChunks = array_chunk($views, (count($views) + 1) / 2);
 ?>
 <script setup>
-import { useForm } from "@inertiajs/vue3";
 const {yiiUrl} = window;
 
 const props = defineProps({
     model: Object,    
-});
-
-const form = useForm({
-<?php foreach($forms as $key => $value):?>
-    <?= $key?>: <?= $value?>,
-<?php endforeach; ?>
 });
 </script>
 <template>
@@ -42,13 +37,25 @@ const form = useForm({
                         </v-toolbar> 
                         <v-card-text>
                             <v-row>
-<?php foreach($inputs as $input):
-    $input['field'] = false;
-    $input['readonly'] = true;
-    $input['variant'] = 'solo';
-?>
-                                <v-col class="py-1" xl="3" md="4" sm="6" cols="12">
-                                    <?= Html::tag($input['type'] ? 'v-text-field': 'v-switch', '', $input) ?> 
+<?php foreach($viewChunks as $parts): ?>
+                                <v-col xl="6" md="6" sm="6" cols="12">
+<?php if($generator->viewList): ?>
+                                    <v-list density="compact">
+<?php foreach($parts as $part): ?>
+                                        <v-list-item>
+                                            <v-list-item-title class="font-bold"><?= $part['label'] ?></v-list-item-title>
+                                            <v-list-item-subtitle> {{model.<?= $part['field'] ?>}} </v-list-item-subtitle>
+                                        </v-list-item>
+<?php endforeach; ?>
+                                    </v-list>
+<?php else: ?>
+<?php foreach($parts as $part): ?>
+                                    <v-row>
+                                        <v-col cols="4" class="font-bold"><?= $part['label'] ?></v-col>
+                                        <v-col cols="8"> {{model.<?= $part['field'] ?>}} </v-col>
+                                    </v-row>
+<?php endforeach; ?>
+<?php endif; ?>
                                 </v-col>
 <?php endforeach; ?>
                             </v-row>

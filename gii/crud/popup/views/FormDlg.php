@@ -10,6 +10,8 @@ $modelClass = StringHelper::basename($generator->modelClass);
 $baseRoute = $generator->controllerID;
 $class = $generator->modelClass;
 $pks = $class::primaryKey();
+
+$inputChunks = array_chunk($inputs, (count($inputs) + 1) / 2);
 ?>
 <script setup>
 import { router, useForm } from "@inertiajs/vue3";
@@ -79,7 +81,10 @@ defineExpose({open});
             <v-divider/>
             <v-card-text>
                 <v-row>
-<?php foreach($inputs as $input):
+<?php foreach($inputChunks as $parts): ?>
+                    <v-col class="py-1" xl="6" md="6" sm="6" cols="12">
+                        <v-row>
+<?php foreach($parts as $input):
     $field = \yii\helpers\ArrayHelper::remove($input, 'field');
     $tag = $input['type'] ? 'v-text-field': 'v-switch';
     if($field){
@@ -88,8 +93,11 @@ defineExpose({open});
         $input = Html::tag($tag, '', $input);
     }
 ?>
-                    <v-col class="py-1" cols="12">
-                        <?= $input ?> 
+                            <v-col class="py-1" cols="12">
+                                <?= $input ?> 
+                            </v-col>
+<?php endforeach; ?>
+                        </v-row>
                     </v-col>
 <?php endforeach; ?>
                 </v-row>

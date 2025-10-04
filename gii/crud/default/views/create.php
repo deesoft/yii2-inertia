@@ -8,6 +8,8 @@ use yii\helpers\StringHelper;
 
 $modelClass = StringHelper::basename($generator->modelClass);
 $baseRoute = $generator->controllerID;
+
+$inputChunks = array_chunk($inputs, (count($inputs) + 1) / 2);
 ?>
 <script setup>
 import { useForm } from "@inertiajs/vue3";
@@ -43,7 +45,10 @@ const form = useForm('create<?= $modelClass?>', {
                         <v-divider/>
                         <v-card-text>
                             <v-row>
-<?php foreach($inputs as $input):
+<?php foreach($inputChunks as $parts): ?>
+                                <v-col xl="6" md="6" sm="6" cols="12">
+                                    <v-row>
+<?php foreach($parts as $input):
     $field = \yii\helpers\ArrayHelper::remove($input, 'field');
     $tag = $input['type'] ? 'v-text-field': 'v-switch';
     if($field){
@@ -52,8 +57,11 @@ const form = useForm('create<?= $modelClass?>', {
         $input = Html::tag($tag, '', $input);
     }
 ?>
-                                <v-col class="py-1" xl="3" md="4" sm="6" cols="12">
-                                    <?= $input ?> 
+                                        <v-col class="py-1" cols="12">
+                                            <?= $input ?> 
+                                        </v-col>
+<?php endforeach; ?>
+                                    </v-row>
                                 </v-col>
 <?php endforeach; ?>
                             </v-row>

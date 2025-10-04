@@ -17,7 +17,7 @@ $urlParams = implode(', ', $urlParams);
 ?>
 <script setup>
 import { router } from "@inertiajs/vue3";
-import {confirm} from "@/composable/global";
+import {confirm} from "@/composables/global";
 import FormDlg from './FormDlg.vue';
 const {yiiUrl} = window;
 
