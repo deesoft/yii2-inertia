@@ -56,7 +56,7 @@ const form = useForm(`update<?= $modelClass?>:<?= $formIds ?>`,{
                                     <v-row>
 <?php foreach($parts as $input):
     $field = \yii\helpers\ArrayHelper::remove($input, 'field');
-    $tag = $input['type'] ? 'v-text-field': 'v-switch';
+    $tag = $input['type'] ? 'v-text-field': 'v-checkbox';
     if($field){
         $input = "<$tag " . Html::renderTagAttributes($input) . " @input=\"form.clearErrors('$field')\"" . "></$tag>";
     } else {

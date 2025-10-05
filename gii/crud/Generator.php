@@ -280,7 +280,7 @@ class Generator extends \yii\gii\generators\crud\Generator
             if (in_array($column, $this->excludeColumns)) {
                 continue;
             }
-            $col = "field: '$column', title: '" . Inflector::camel2words($column) . "'";
+            $col = "field: '$column', title: '" . $model->getAttributeLabel($column) . "'";
             if ($type != Schema::TYPE_JSON) {
                 $col .= ", sort: '$column'";
                 $sortAttrs[] = "'$column'";
