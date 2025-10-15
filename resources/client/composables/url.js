@@ -13,6 +13,11 @@ export const URL = reactive({
      */
     reload(params, options) {
         let url = yiiUrl(this.route, { ...this.params, ...(params || {}) });
-        return router.get(url, {}, options || {});
+        return router.visit(url, {
+            preserveScroll: true,
+            preserveState: true,
+            ...(options || {}),
+            method: 'get',
+        });
     },
 });

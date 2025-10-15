@@ -11,7 +11,7 @@ $class = $generator->modelClass;
 $pks = $class::primaryKey();
 $urlParams = [];
 foreach ($pks as $pk) {
-    $urlParams[] = "$pk:row.$pk";
+    $urlParams[] = "$pk: row.$pk";
 }
 $urlParams = implode(', ', $urlParams);
 ?>
@@ -24,15 +24,15 @@ const props = defineProps({
     data: Object,    
 });
 const columns = [
-    {field:'no', title:'NO'},
+    {field: 'no', title: 'NO', filter: false},
 <?php 
 $count = 0;
-foreach($gridColumns as $col):
+foreach($views as $col):
 $count++;
 ?>
-    <?= ($count > 6 ? '// ':'') . $col?>,
+    <?= ($count > 6 ? '// ':'') ?>{field: '<?= $col['field'] ?>', title: '<?= $col['label'] ?>' <?= $col['sort'] ? ", sort: '{$col['field']}'":'' ?>},
 <?php endforeach; ?>
-    {field:'action', title:'Action'},
+    {field: 'action', title: 'Action', filter: false},
 ];
 
 function deleteRow(row){
@@ -65,8 +65,8 @@ function deleteRow(row){
                     </v-toolbar>
                     <v-divider/>
                     <GridView :data="data" :columns="columns" reload>
-                        <template #d-no="row">{{ row.$no }}</template>
-                        <template #d-action="row">
+                        <template #d-no="{line}">{{ line }}</template>
+                        <template #d-action="{row}">
                             <v-btn density="compact" size="small" icon="mdi-eye" :to="yiiUrl('<?= $baseRoute ?>/view', {<?= $urlParams ?>})"></v-btn>
                             <v-btn density="compact" size="small" icon="mdi-pencil" :to="yiiUrl('<?= $baseRoute ?>/update', {<?= $urlParams ?>})"></v-btn>
                             <v-btn density="compact" size="small" icon="mdi-delete" @click="deleteRow(row)"></v-btn>                            

@@ -10,18 +10,42 @@ $modelClass = StringHelper::basename($generator->modelClass);
 $baseRoute = $generator->controllerID;
 
 $inputChunks = array_chunk($inputs, (count($inputs) + 1) / 2);
+$required = false;
+foreach($inputs as $input){
+    if($input['required']){
+        $required = true;
+        break;
+    }
+}
 ?>
 <script setup>
 import { useForm } from "@inertiajs/vue3";
+import { useTemplateRef, watch } from 'vue';
+<?php if($required): ?>
+import { required } from "@/composables/validation";
+<?php endif; ?>
 const {yiiUrl} = window;
+
 const props = defineProps({
     model: Object,
 });
+
+const formRef = useTemplateRef('formRef');
 const form = useForm('create<?= $modelClass?>', {
 <?php foreach($forms as $key => $value):?>
     <?= $key?>: <?= $value?>,
 <?php endforeach; ?>
 });
+
+watch(() => form.errors, errors => {
+    if(formRef.value){
+        formRef.value.items.forEach(item => {
+            if(errors[item.id]){
+                item.errorMessages.push(errors[item.id]);
+            }
+        });
+    }
+}, {deep: true});
 </script>
 <template>
     <v-container fluid>
@@ -34,7 +58,7 @@ const form = useForm('create<?= $modelClass?>', {
                 </p>
             </v-col>
             <v-col cols="12">
-                <form @submit.prevent="form.post($page.url)">
+                <v-form ref="formRef" @submit.prevent="form.post($page.url)">
                     <v-card>
                         <v-toolbar density="default">
                             <v-btn density="compact" icon="mdi-arrow-left" @click="yiiUrl.back()">
@@ -48,17 +72,15 @@ const form = useForm('create<?= $modelClass?>', {
 <?php foreach($inputChunks as $parts): ?>
                                 <v-col xl="6" md="6" sm="6" cols="12">
                                     <v-row>
-<?php foreach($parts as $input):
-    $field = \yii\helpers\ArrayHelper::remove($input, 'field');
-    $tag = $input['type'] ? 'v-text-field': 'v-checkbox';
-    if($field){
-        $input = "<$tag " . Html::renderTagAttributes($input) . " @input=\"form.clearErrors('$field')\"" . "></$tag>";
-    } else {
-        $input = Html::tag($tag, '', $input);
-    }
-?>
+<?php foreach($parts as $input): ?>
                                         <v-col class="py-1" cols="12">
-                                            <?= $input ?> 
+<?php if($input['type'] != 'boolean'): ?>
+                                            <v-text-field type="<?= $input['type'] ?>" name="<?= $input['field'] ?>" v-model="form.<?= $input['field'] ?>" label="<?= $input['label'] ?>"
+                                                variant="outlined" density="compact" <?= $input['required'] ? ':rules=[required]' : '' ?>></v-text-field>
+<?php else: ?>
+                                            <v-checkbox name="<?= $input['field'] ?>" v-model="form.<?= $input['field'] ?>" label="<?= $input['label'] ?>"
+                                                variant="outlined" density="compact" <?= $input['required'] ? ':rules=[required]' : '' ?>></v-checkbox>
+<?php endif; ?>
                                         </v-col>
 <?php endforeach; ?>
                                     </v-row>
@@ -72,7 +94,7 @@ const form = useForm('create<?= $modelClass?>', {
                             <v-btn :loading="form.processing" variant="flat" color="primary" type="submit">Save</v-btn>
                         </v-toolbar>
                     </v-card>
-                </form>
+                </v-form>
             </v-col>
         </v-row>
     </v-container>

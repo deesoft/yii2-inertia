@@ -144,7 +144,7 @@ class Generator extends \yii\gii\generators\crud\Generator
     public function generate()
     {
         $controllerFile = Yii::getAlias('@' . str_replace('\\', '/', ltrim($this->getControllerClass(), '\\')) . '.php');
-        list($conditions, $sortAttrs, $gridColumns, $inputs, $forms, $views) = $this->generateDefinition();
+        list($conditions, $sortAttrs, $inputs, $forms, $views) = $this->generateDefinition();
         $files = [
             new CodeFile($controllerFile, $this->render('controller.php', [
                     'conditions' => $conditions,
@@ -165,7 +165,6 @@ class Generator extends \yii\gii\generators\crud\Generator
             $vueFile = str_replace('.php', '.vue', $file);
             if (is_file($templatePath . '/' . $file) && pathinfo($file, PATHINFO_EXTENSION) === 'php') {
                 $files[] = new CodeFile("$path/$vueFile", $this->render("views/$file", [
-                        'gridColumns' => $gridColumns,
                         'inputs' => $inputs,
                         'forms' => $forms,
                         'modelName' => $modelName,
@@ -194,10 +193,7 @@ class Generator extends \yii\gii\generators\crud\Generator
                 $forms[$attribute] = "props.model.$attribute";
                 $columns[$attribute] = 'unknown';
                 $inputs[] = [
-                    'v-model' => "form.$attribute",
                     'label' => $model->getAttributeLabel($attribute),
-                    'variant' => "outlined",
-                    'density' => "compact",
                     'required' => $model->isAttributeRequired($attribute),
                     'type' => 'text',
                     'field' => $attribute,
@@ -205,16 +201,18 @@ class Generator extends \yii\gii\generators\crud\Generator
                 $views[] = [
                     'field' => $attribute,
                     'label' => $model->getAttributeLabel($attribute),
+                    'sort' => false,
                 ];
             }
         } else {
             foreach ($table->columns as $column) {
-                $columns[$column->name] = $column->type;
-                if (in_array($column->name, $this->excludeColumns)) {
+                $attribute = $column->name;
+                $columns[$attribute] = $column->type;
+                if (in_array($attribute, $this->excludeColumns)) {
                     continue;
                 }
                 if (!$column->autoIncrement) {
-                    $forms[$column->name] = "props.model.{$column->name}";
+                    $forms[$attribute] = "props.model.{$column->name}";
                 }
                 $step = null;
                 $skip = $column->autoIncrement;
@@ -234,7 +232,7 @@ class Generator extends \yii\gii\generators\crud\Generator
                         $type = 'number';
                         break;
                     case Schema::TYPE_BOOLEAN:
-                        $type = null;
+                        $type = 'boolean';
                         break;
                     case Schema::TYPE_DATE:
                         $type = 'date';
@@ -248,25 +246,22 @@ class Generator extends \yii\gii\generators\crud\Generator
                         $skip = true;
                         break;
                     default:
-
+                        $type = 'text';
                         break;
                 }
                 if (!$skip) {
                     $inputs[] = [
-                        'v-model' => "form.{$column->name}",
-                        'label' => $model->getAttributeLabel($column->name),
-                        'variant' => "outlined",
-                        'density' => "compact",
+                        'label' => $model->getAttributeLabel($attribute),
                         'required' => !$column->allowNull && $column->defaultValue === null,
                         'type' => $type,
                         'step' => $step,
-                        ':error-messages' => "form.errors.{$column->name}",
-                        'field' => $column->name,
+                        'field' => $attribute,
                     ];
                 }
                 $views[] = [
-                    'field' => $column->name,
-                    'label' => $model->getAttributeLabel($column->name),
+                    'field' => $attribute,
+                    'label' => $model->getAttributeLabel($attribute),
+                    'sort' => $column->type != Schema::TYPE_JSON,
                 ];
             }
         }
@@ -275,17 +270,13 @@ class Generator extends \yii\gii\generators\crud\Generator
         $hashConditions = [];
         $qConditions = [];
         $sortAttrs = [];
-        $gridColumns = [];
         foreach ($columns as $column => $type) {
             if (in_array($column, $this->excludeColumns)) {
                 continue;
             }
-            $col = "field: '$column', title: '" . $model->getAttributeLabel($column) . "'";
-            if ($type != Schema::TYPE_JSON) {
-                $col .= ", sort: '$column'";
+            if ($type != Schema::TYPE_JSON && $type != 'unknown') {
                 $sortAttrs[] = "'$column'";
             }
-            $gridColumns[] = '{' . $col . '}';
             switch ($type) {
                 case Schema::TYPE_TINYINT:
                 case Schema::TYPE_SMALLINT:
@@ -339,7 +330,7 @@ if (\$q = \$request->get('q')) {
         }\n\n
 TXT;
         }
-        return [$conditions, $sortAttrs, $gridColumns, $inputs, $forms, $views];
+        return [$conditions, $sortAttrs, $inputs, $forms, $views];
     }
 
     /**

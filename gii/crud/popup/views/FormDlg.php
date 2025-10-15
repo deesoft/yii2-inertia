@@ -12,28 +12,39 @@ $class = $generator->modelClass;
 $pks = $class::primaryKey();
 
 $inputChunks = array_chunk($inputs, (count($inputs) + 1) / 2);
+$required = false;
+foreach($inputs as $input){
+    if($input['required']){
+        $required = true;
+        break;
+    }
+}
 ?>
 <script setup>
 import { router, useForm } from "@inertiajs/vue3";
-import {reactive} from 'vue';
+import { reactive, ref, watch, useTemplateRef } from 'vue';
+import { $bus } from '@/composables/global';
+<?php if($required): ?>
+import { required } from "@/composables/validation";
+<?php endif; ?>
 const {yiiUrl} = window;
 
+const show = ref(false);
+const errors = ref({});
+const formRef = useTemplateRef('formRef');
 const state = reactive({
-    show: false,
 <?php foreach($pks as $pk): ?>
     <?= $pk ?>: null,
 <?php endforeach; ?>
 });
-const form = useForm('create<?= $modelClass?>', {
+const form = reactive({
 <?php foreach($forms as $key => $value):?>
     <?= $key?>: null,
 <?php endforeach; ?>
 });
 
 function open(row){
-    form.reset();
-    form.clearErrors();
-    if(row){
+    if(row) {
 <?php foreach($pks as $pk): ?>
         state.<?= $pk ?>= row.<?= $pk?>;
 <?php endforeach; ?>
@@ -41,8 +52,16 @@ function open(row){
 <?php foreach($forms as $key => $value):?>
         form.<?= $key?>= row.<?= $key?>;
 <?php endforeach; ?>
+    } else {
+<?php foreach($pks as $pk): ?>
+        state.<?= $pk ?>= null;
+<?php endforeach; ?>
+
+<?php foreach($forms as $key => $value):?>
+        form.<?= $key?>= null;
+<?php endforeach; ?>
     }
-    state.show = true;
+    show.value = true;
 }
 
 const createUrl = yiiUrl.post('<?= $baseRoute ?>/create');
@@ -60,53 +79,59 @@ function save(){
     $paramUrl = implode(', ', $ps);
 ?>
     let url = <?= $if ?> ? yiiUrl.post('<?= $baseRoute ?>/update', {<?= $paramUrl?>}) : createUrl;
-    axios.post(url, form.data()).then(r => {
-        state.show = false;
+    axios.post(url, form).then(r => {
+        show.value = false;
         router.reload();
     }).catch(error => {
-        form.setError(error.response.data);
+        $bus.emit(error.response.statusText);
+        if(error.response.status == 422){
+            errors.value = error.response.data;
+        }
     });
 }
-defineExpose({open});
+
+watch(errors, errs => {
+    if(formRef.value){
+        formRef.value.items.forEach(item => {
+            if(errs[item.id]){
+                item.errorMessages.push(errs[item.id]);
+            }
+        });
+    }
+});
+defineExpose({ open });
 </script>
 <template>
-    <v-dialog v-model="state.show" @keydown.esc="state.show = false" max-width="450">
-        <v-card>
-            <v-toolbar class="gradient-orange" density="compact" flat>
-                <v-toolbar-title class="white--text">
-                    {{ <?= $if ?> ? 'Edit' : 'New' }} <?= $modelName ?>
-                </v-toolbar-title>
-            </v-toolbar>
-            <v-progress-linear indeterminate v-if="form.processing"></v-progress-linear>
-            <v-divider/>
-            <v-card-text>
-                <v-row>
+    <v-dialog v-model="show" persistent>
+        <v-form ref="formRef" @submit.prevent="save()">
+            <v-card :title="(<?= $if ?> ? 'Edit ' : 'New ') + '<?= $modelName ?>'">
+                <v-card-text>
+                    <v-row>
 <?php foreach($inputChunks as $parts): ?>
-                    <v-col class="py-1" xl="6" md="6" sm="6" cols="12">
-                        <v-row>
-<?php foreach($parts as $input):
-    $field = \yii\helpers\ArrayHelper::remove($input, 'field');
-    $tag = $input['type'] ? 'v-text-field': 'v-checkbox';
-    if($field){
-        $input = "<$tag " . Html::renderTagAttributes($input) . " @input=\"form.clearErrors('$field')\"" . "></$tag>";
-    } else {
-        $input = Html::tag($tag, '', $input);
-    }
-?>
-                            <v-col class="py-1" cols="12">
-                                <?= $input ?> 
-                            </v-col>
+                        <v-col class="py-1" xl="6" md="6" sm="6" cols="12">
+                            <v-row>
+<?php foreach($parts as $input): ?>
+                                <v-col class="py-1" cols="12">
+<?php if($input['type'] != 'boolean'): ?>
+                                    <v-text-field type="<?= $input['type'] ?>" name="<?= $input['field'] ?>" v-model="form.<?= $input['field'] ?>" label="<?= $input['label'] ?>"
+                                        variant="outlined" density="compact" <?= $input['required'] ? ':rules=[required]' : '' ?>></v-text-field>
+<?php else: ?>
+                                    <v-checkbox name="<?= $input['field'] ?>" v-model="form.<?= $input['field'] ?>" label="<?= $input['label'] ?>"
+                                        variant="outlined" density="compact" <?= $input['required'] ? ':rules=[required]' : '' ?>></v-checkbox>
+<?php endif; ?>
+                                </v-col>
 <?php endforeach; ?>
-                        </v-row>
-                    </v-col>
+                            </v-row>
+                        </v-col>
 <?php endforeach; ?>
-                </v-row>
-            </v-card-text>
-            <v-card-actions class="pt-0">
-                <v-spacer></v-spacer>
-                <v-btn color="green" text @click.native="state.show = false">Close</v-btn>
-                <v-btn dark color="error darken-1" text @click.native="save">Save</v-btn>
-            </v-card-actions>
-        </v-card>
+                    </v-row>
+                </v-card-text>
+                <v-card-actions class="pt-0">
+                    <v-spacer></v-spacer>
+                    <v-btn color="green" text @click.native="show = false">Close</v-btn>
+                    <v-btn dark color="error darken-1" text type="submit">Save</v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-form>
     </v-dialog>
 </template>
