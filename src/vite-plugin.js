@@ -19,7 +19,7 @@ function listFiles(dir, prefix = '') {
 
 
 export default function InertiaPages(config) {
-    function toContent(app, toFile = false) {
+    function buildContext(app, toFile = false) {
         if (toFile && !app.output) {
             return;
         }
@@ -171,11 +171,11 @@ export default function InitApp(config){
 
     state.apps.forEach(app => {
         if (app.output) {
-            toContent(app, true);
+            buildContext(app, true);
         }
     });
 
-    const name = 'vue-yii2-inertia';
+    const name = 'yii2-inertia-vue';
     return {
         name, // required, will show up in warnings and errors
         resolveId(id) {
@@ -188,18 +188,30 @@ export default function InitApp(config){
         load(id) {
             for (var i in state.apps) {
                 if (state.apps[i].mId === id) {
-                    return toContent(state.apps[i], false);
+                    return buildContext(state.apps[i], false);
                 }
             }
         },
-        handleHotUpdate({ server, modules }) {
-            state.apps = resolveApps(config);
+        handleHotUpdate({server}) {
+            const updates = [];
             state.apps.forEach(app => {
+                const mod = server.moduleGraph.getModuleById(app.mId);
+                if(mod){
+                    server.moduleGraph.invalidateModule(mod);
+                    updates.push({
+                        type: 'js-update',
+                        path: '/' + app.id,
+                        acceptedPath: '/' + app.id,
+                        timestamp: Date.now(),
+                    });
+                }
                 if (app.output) {
-                    toContent(app, true);
+                    buildContext(app, true);
                 }
             });
-            //return [];
+            if(updates.length){
+                server.ws.send({type:'update'. updates});
+            }
         }
     }
 }
