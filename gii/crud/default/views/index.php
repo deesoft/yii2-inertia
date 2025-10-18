@@ -64,7 +64,7 @@ function deleteRow(row){
                         <v-btn density="compact" icon="mdi-plus" :to="yiiUrl('<?= $baseRoute ?>/create')"></v-btn>
                     </v-toolbar>
                     <v-divider/>
-                    <GridView :data="data" :columns="columns" reload>
+                    <GridView :data="data" :columns="columns" reload density="compact">
                         <template #d-no="{line}">{{ line }}</template>
                         <template #d-action="{row}">
                             <v-btn density="compact" size="small" icon="mdi-eye" :to="yiiUrl('<?= $baseRoute ?>/view', {<?= $urlParams ?>})"></v-btn>

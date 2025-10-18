@@ -105,6 +105,9 @@ defineExpose({ open });
     <v-dialog v-model="show" persistent>
         <v-form ref="formRef" @submit.prevent="save()">
             <v-card :title="(<?= $if ?> ? 'Edit ' : 'New ') + '<?= $modelName ?>'">
+                <template  v-slot:append>
+                    <v-btn density="compact" size="small" icon="$close" @click="show = false"></v-btn> 
+                </template>
                 <v-card-text>
                     <v-row>
 <?php foreach($inputChunks as $parts): ?>
