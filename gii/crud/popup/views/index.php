@@ -56,12 +56,12 @@ function deleteRow(row){
             </v-col>
             <v-col cols="12">
                 <v-card>
-                    <v-toolbar density="default">
+                    <v-toolbar density="compact">
                         <v-btn density="compact" icon="mdi-reload" @click="router.reload()"></v-btn>
                         <v-toolbar-title><?= $modelName ?></v-toolbar-title>
                         <v-spacer></v-spacer>
                         <v-toolbar-items>
-                            <QuerySearchText reload style="min-width: 250px;" ></QuerySearchText>
+                            <QuerySearchText density="compact" style="min-width: 250px;"></QuerySearchText>
                         </v-toolbar-items>
                         <v-btn density="compact" icon="mdi-plus" @click="formDlg.open()"></v-btn>
                     </v-toolbar>
