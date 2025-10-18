@@ -99,10 +99,9 @@ Add configuration to Application $params config.
         'inertia' => [
             'tag' => 'div', // default div
             'id' => 'app', // default app
-            'viewFile' => '@app/views/app.php', // default @dee/inertia/views/app.php
+            'view_file' => '@app/views/app.php', // default @dee/inertia/views/app.php
             'serializer' => ['class' => dee\inertia\Serializer::class], //default
-            'encript_history' => true, // default false
-            'vite_entry_file' => 'client/app.js', // default
+            'encrypt_history' => true, // default false
         ],
         'inertia.shared' => [
             'user' => function(){
@@ -116,9 +115,9 @@ Add configuration to Application $params config.
 
 Create Url
 ----------
-Use function ```toUrl``` to generate url from route. It's equivalent with ```yii\helpers\Url::to()```.
+Use function ```yiiUrl``` to generate url from route. It's equivalent with ```yii\helpers\Url::to()```.
 ```js
-const {toUrl} = window;
+const {yiiUrl} = window;
 
-const url = toUrl('product/view', {id:row.id}); // equivalent Url::to(['/product/view', 'id'=>$row->id])
+const url = yiiUrl('product/view', {id: row.id}); // equivalent Url::to(['/product/view', id' => $row->id])
 ```

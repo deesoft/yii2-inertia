@@ -66,7 +66,7 @@ function deleteRow(row){
                         <v-btn density="compact" icon="mdi-plus" @click="formDlg.open()"></v-btn>
                     </v-toolbar>
                     <v-divider/>
-                    <GridView :data="data" :columns="columns" reload>
+                    <GridView :data="data" :columns="columns" reload density="compact">
                         <template #d-no="{line}">{{ line }}</template>
                         <template #d-action="{row}">
                             <v-btn density="compact" size="small" icon="mdi-pencil" @click="formDlg.open(row)"></v-btn>

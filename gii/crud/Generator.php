@@ -26,12 +26,20 @@ use yii\helpers\StringHelper;
  */
 class Generator extends \yii\gii\generators\crud\Generator
 {
-
+    /**
+     * @var string Controller ID
+     */
     public $controllerID;
-    public $inlineSearch;
+    /**
+     * @var bool Using inline search
+     */
+    public $inlineSearch = true;
     public $clientPath = '@client/pages';
     public $excludeColumns = ['created_at', 'created_by', 'updated_at', 'updated_by', 'is_deleted'];
     public $modelNsSearch = [];
+    /**
+     * @var bool Using v-list for view
+     */
     public $viewList = false;
     private $_controllerClass;
 
@@ -144,10 +152,9 @@ class Generator extends \yii\gii\generators\crud\Generator
     public function generate()
     {
         $controllerFile = Yii::getAlias('@' . str_replace('\\', '/', ltrim($this->getControllerClass(), '\\')) . '.php');
-        list($conditions, $sortAttrs, $inputs, $forms, $views) = $this->generateDefinition();
+        list($sortAttrs, $inputs, $forms, $views) = $this->generateDefinition();
         $files = [
             new CodeFile($controllerFile, $this->render('controller.php', [
-                    'conditions' => $conditions,
                     'sortAttrs' => $sortAttrs,
                 ])),
         ];
@@ -266,9 +273,6 @@ class Generator extends \yii\gii\generators\crud\Generator
             }
         }
 
-        $likeConditions = [];
-        $hashConditions = [];
-        $qConditions = [];
         $sortAttrs = [];
         foreach ($columns as $column => $type) {
             if (in_array($column, $this->excludeColumns)) {
@@ -277,60 +281,9 @@ class Generator extends \yii\gii\generators\crud\Generator
             if ($type != Schema::TYPE_JSON && $type != 'unknown') {
                 $sortAttrs[] = "'$column'";
             }
-            switch ($type) {
-                case Schema::TYPE_TINYINT:
-                case Schema::TYPE_SMALLINT:
-                case Schema::TYPE_INTEGER:
-                case Schema::TYPE_BIGINT:
-                case Schema::TYPE_BOOLEAN:
-                case Schema::TYPE_FLOAT:
-                case Schema::TYPE_DOUBLE:
-                case Schema::TYPE_DECIMAL:
-                case Schema::TYPE_MONEY:
-                case Schema::TYPE_DATE:
-                case Schema::TYPE_TIME:
-                case Schema::TYPE_DATETIME:
-                case Schema::TYPE_TIMESTAMP:
-                    $hashConditions[] = "'{$column}' => \$request->get('{$column}'),";
-                    break;
-                case Schema::TYPE_JSON:
-                    break;
-                case Schema::TYPE_STRING:
-                case Schema::TYPE_CHAR:
-                    if ($column == 'status' || $column == 'number') {
-                        $hashConditions[] = "'{$column}' => \$request->get('{$column}'),";
-                        break;
-                    }
-                default:
-                    $likeKeyword = $this->getClassDbDriverName() === 'pgsql' ? 'ilike' : 'like';
-                    $likeConditions[] = "->andFilterWhere(['{$likeKeyword}', '{$column}', \$request->get('{$column}')])";
-                    $qConditions[] = "['{$likeKeyword}', '{$column}', \$q],";
-                    break;
-            }
         }
 
-        $conditions = [];
-        if (!empty($hashConditions)) {
-            $conditions[] = "\$query->andFilterWhere([\n"
-                . str_repeat(' ', 12) . implode("\n" . str_repeat(' ', 12), $hashConditions)
-                . "\n" . str_repeat(' ', 8) . "]);\n";
-        }
-        if (!empty($likeConditions)) {
-            $conditions[] = "\$query" . implode("\n" . str_repeat(' ', 12), $likeConditions) . ";\n";
-        }
-
-        if (!empty($qConditions)) {
-            $qConditions = implode("\n" . str_repeat(' ', 16), $qConditions);
-            $conditions[] = <<<TXT
-if (\$q = \$request->get('q')) {
-            \$query->andWhere([
-                'OR',
-                $qConditions
-            ]);
-        }\n\n
-TXT;
-        }
-        return [$conditions, $sortAttrs, $inputs, $forms, $views];
+        return [$sortAttrs, $inputs, $forms, $views];
     }
 
     /**
@@ -404,6 +357,108 @@ TXT;
      * Generates search conditions
      * @return array
      */
+    public function generateSearchConditions()
+    {
+        $columns = [];
+        if (($table = $this->getTableSchema()) === false) {
+            $class = $this->modelClass;
+            /* @var $model \yii\db\BaseActiveRecord */
+            $model = new $class();
+            foreach ($model->attributes() as $attribute) {
+                $columns[$attribute] = 'unknown';
+            }
+        } else {
+            foreach ($table->columns as $column) {
+                $columns[$column->name] = $column->type;
+            }
+        }
+
+        $filterConditions = [];
+        $hashConditions = [];
+        $qConditions = [];
+        $types = ['safe' => ['q']];
+        foreach ($columns as $column => $type) {
+            switch ($type) {
+                case Schema::TYPE_TINYINT:
+                case Schema::TYPE_SMALLINT:
+                case Schema::TYPE_INTEGER:
+                case Schema::TYPE_BIGINT:
+                case Schema::TYPE_BOOLEAN:
+                    if(in_array($column, ['type', 'created_by', 'updated_by']) || $type == Schema::TYPE_BOOLEAN){
+                        $hashConditions[] = "'{$column}' => \$this->{$column},";
+                        $types[$type == Schema::TYPE_BOOLEAN ? 'boolean' : 'integer'][] = $column;
+                    }else{
+                        $filterConditions[] = "->andFilterCompare('{$column}', \$this->{$column})";
+                        $types['compare-integer'][] = $column;
+                    }
+                    break;
+                case Schema::TYPE_FLOAT:
+                case Schema::TYPE_DOUBLE:
+                case Schema::TYPE_DECIMAL:
+                case Schema::TYPE_MONEY:
+                    $filterConditions[] = "->andFilterCompare('{$column}', \$this->{$column})";
+                    $types['compare-number'][] = $column;
+                    break;
+                case Schema::TYPE_DATE:
+                case Schema::TYPE_TIME:
+                case Schema::TYPE_DATETIME:
+                case Schema::TYPE_TIMESTAMP:
+                    $filterConditions[] = "->andFilterCompare('{$column}', \$this->{$column})";
+                    $types['compare-' . ($type == Schema::TYPE_TIMESTAMP ? 'datetime' : $type)][] = $column;
+                    break;
+                case Schema::TYPE_JSON:
+                    break;
+                case Schema::TYPE_STRING:
+                case Schema::TYPE_CHAR:
+                    if ($column == 'status' || $column == 'number') {
+                        $hashConditions[] = "'{$column}' => \$this->{$column},";
+                        $types['safe'][] = $column;
+                        break;
+                    }
+                default:
+                    $likeKeyword = $this->getClassDbDriverName() === 'pgsql' ? 'ilike' : 'like';
+                    $filterConditions[] = "->andFilterWhere(['{$likeKeyword}', '{$column}', \$this->{$column}])";
+                    $qConditions[] = "['{$likeKeyword}', '{$column}', \$q],";
+                    $types['safe'][] = $column;
+                    break;
+            }
+        }
+
+        $conditions = [];
+        if (!empty($hashConditions)) {
+            $conditions[] = "\$query->andFilterWhere([\n"
+                . str_repeat(' ', 12) . implode("\n" . str_repeat(' ', 12), $hashConditions)
+                . "\n" . str_repeat(' ', 8) . "]);\n";
+        }
+        if (!empty($filterConditions)) {
+            $conditions[] = "\$query" . implode("\n" . str_repeat(' ', 12), $filterConditions) . ";\n";
+        }
+
+        if (!empty($qConditions)) {
+            $qConditions = implode("\n" . str_repeat(' ', 16), $qConditions);
+            $conditions[] = <<<TXT
+if (\$q = \$this->q) {
+            \$query->andWhere([
+                'OR',
+                $qConditions
+            ]);
+        }\n\n
+TXT;
+        }
+        $rules = [];
+        foreach($types as $type => $columns){
+            if(preg_match('/^compare-(.+)$/', $type, $matches)){
+                $rules[] = "[['" . implode("', '", $columns) . "'], 'compare', 'type' => '{$matches[1]}']";
+            } else {
+                $rules[] = "[['" . implode("', '", $columns) . "'], '$type']";
+            }
+        }
+        return [$conditions, $rules];
+    }
+    /**
+     * Generates search conditions
+     * @return array
+     */
     public function generateInlineSearchConditions()
     {
         $columns = [];
@@ -420,7 +475,7 @@ TXT;
             }
         }
 
-        $likeConditions = [];
+        $filterConditions = [];
         $hashConditions = [];
         $qConditions = [];
         foreach ($columns as $column => $type) {
@@ -433,6 +488,10 @@ TXT;
                 case Schema::TYPE_INTEGER:
                 case Schema::TYPE_BIGINT:
                 case Schema::TYPE_BOOLEAN:
+                    if($column == 'type' || $type == Schema::TYPE_BOOLEAN){
+                        $hashConditions[] = "'{$column}' => \$request->get('{$column}'),";
+                        break;
+                    }
                 case Schema::TYPE_FLOAT:
                 case Schema::TYPE_DOUBLE:
                 case Schema::TYPE_DECIMAL:
@@ -441,7 +500,7 @@ TXT;
                 case Schema::TYPE_TIME:
                 case Schema::TYPE_DATETIME:
                 case Schema::TYPE_TIMESTAMP:
-                    $hashConditions[] = "'{$column}' => \$request->get('{$column}'),";
+                    $filterConditions[] = "->andFilterCompare('{$column}', \$request->get('{$column}'))";
                     break;
                 case Schema::TYPE_JSON:
                     break;
@@ -453,7 +512,7 @@ TXT;
                     }
                 default:
                     $likeKeyword = $this->getClassDbDriverName() === 'pgsql' ? 'ilike' : 'like';
-                    $likeConditions[] = "->andFilterWhere(['{$likeKeyword}', '{$column}', \$request->get('{$column}')])";
+                    $filterConditions[] = "->andFilterWhere(['{$likeKeyword}', '{$column}', \$request->get('{$column}')])";
                     $qConditions[] = "['{$likeKeyword}', '{$column}', \$q],";
                     break;
             }
@@ -465,8 +524,8 @@ TXT;
                 . str_repeat(' ', 12) . implode("\n" . str_repeat(' ', 12), $hashConditions)
                 . "\n" . str_repeat(' ', 8) . "]);\n";
         }
-        if (!empty($likeConditions)) {
-            $conditions[] = "\$query" . implode("\n" . str_repeat(' ', 12), $likeConditions) . ";\n";
+        if (!empty($filterConditions)) {
+            $conditions[] = "\$query" . implode("\n" . str_repeat(' ', 12), $filterConditions) . ";\n";
         }
 
         if (!empty($qConditions)) {
