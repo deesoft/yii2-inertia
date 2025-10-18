@@ -14,10 +14,10 @@ $searchModelClass = StringHelper::basename($generator->searchModelClass);
 if ($modelClass === $searchModelClass) {
     $modelAlias = $modelClass . 'Model';
 }
-$rules = $generator->generateSearchRules();
+
 $labels = $generator->generateSearchLabels();
 $searchAttributes = $generator->getSearchAttributes();
-$searchConditions = $generator->generateSearchConditions();
+[$searchConditions, $rules] = $generator->generateSearchConditions();
 
 echo "<?php\n";
 ?>
@@ -36,6 +36,11 @@ class <?= $searchModelClass ?> extends <?= isset($modelAlias) ? $modelAlias : $m
 
 {
     /**
+     * @var string
+     */
+    public $q;
+
+    /**
      * @inheritdoc
      */
     public function rules()
@@ -43,6 +48,24 @@ class <?= $searchModelClass ?> extends <?= isset($modelAlias) ? $modelAlias : $m
         return [
             <?= implode(",\n            ", $rules) ?>,
         ];
+    }
+
+    /**
+     * Compare validation
+     */
+    public function compare($attribute, $params)
+    {
+        if (preg_match('/^(<>|>=|>|<=|<|=)?(.+)$/', $this->$attribute, $matches)){
+            $value = $matches[2];
+        } else {
+            $value = $this->$attribute;
+        }
+        $type = $params['type'];
+        unset($params['type']);
+        $validator = Validator::createValidator($type, $this, $attribute, $params);
+        if(!$validator->validate($value, $error)){
+            $this->addError($attribute, $error);
+        }
     }
 
     /**

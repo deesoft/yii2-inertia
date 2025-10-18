@@ -17,8 +17,8 @@ $urlParams = implode(', ', $urlParams);
 ?>
 <script setup>
 import { router } from "@inertiajs/vue3";
-import {confirm} from "@/composables/global";
-const {yiiUrl} = window;
+import { confirm } from "@/composables/global";
+const { yiiUrl } = window;
 
 const props = defineProps({
     data: Object,    
@@ -54,12 +54,12 @@ function deleteRow(row){
             </v-col>
             <v-col cols="12">
                 <v-card>
-                    <v-toolbar density="default">
+                    <v-toolbar density="compact">
                         <v-btn density="compact" icon="mdi-reload" @click="router.reload()"></v-btn>
                         <v-toolbar-title><?= $modelName ?></v-toolbar-title>
                         <v-spacer></v-spacer>
                         <v-toolbar-items>
-                            <QuerySearchText reload style="min-width: 250px;" ></QuerySearchText>
+                            <QuerySearchText density="compact" style="min-width: 250px;"></QuerySearchText>
                         </v-toolbar-items>
                         <v-btn density="compact" icon="mdi-plus" :to="yiiUrl('<?= $baseRoute ?>/create')"></v-btn>
                     </v-toolbar>
