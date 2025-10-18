@@ -4,11 +4,11 @@ namespace dee\inertia;
 
 use Yii;
 use Closure;
+use dee\clientUrl\Helper;
 use stdClass;
 use yii\web\View;
 use yii\helpers\Url;
 use yii\helpers\Html;
-use yii\helpers\Json;
 use yii\web\Response;
 use yii\helpers\ArrayHelper;
 
@@ -27,7 +27,7 @@ class Inertia
     protected static $encryptHistory = false;
 
     /**
-     * Encript history
+     * Encrypt history
      * @param bool $value
      */
     public static function encryptHistory($value = true)
@@ -147,18 +147,7 @@ class Inertia
     protected static function registerJs($view)
     {
         if (static::config('register_yii_url_asset')) {
-            list(, $urlAsset) = $view->assetManager->publish(__DIR__ . '/assets/url.js');
-            $view->registerJsFile($urlAsset, ['position' => View::POS_HEAD]);
-
-            $manager = Yii::$app->urlManager;
-            $js = sprintf('var yiiUrl = initYiiUrl(%s);', Json::htmlEncode([
-                    'suffix' => $manager->suffix,
-                    'baseUrl' => $manager->showScriptName ? $manager->getScriptUrl() : $manager->getBaseUrl(),
-                    'rules' => Route::getUrlRules(),
-                    'home' => Url::home(),
-                    'base' => $manager->getBaseUrl(),
-            ]));
-            $view->registerJs($js, View::POS_HEAD);
+            Helper::registerJs($view);
         }
 
         if (static::config('register_vite_asset')) {

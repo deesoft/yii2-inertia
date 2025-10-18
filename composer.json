@@ -10,9 +10,12 @@
             "email": "misbahuldmunir@gmail.com"
         }
     ],
+    "minimum-stability": "dev",
+    "prefer-stable": true,
     "require": {
         "php": ">=7.0",
         "yiisoft/yii2": "~2.0.50",
+        "deesoft/yii2-client-url": "*",
         "phpspec/php-diff": "^1.1.0"
     },
     "autoload": {
@@ -41,6 +44,13 @@
         {
             "type": "composer",
             "url": "https://asset-packagist.org"
+        },
+        {
+            "type": "path",
+            "url": "../yii2-client-url",
+            "options": {
+                "symlink": true
+            }
         }
     ],
     "require-dev": {
