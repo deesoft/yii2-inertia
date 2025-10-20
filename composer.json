@@ -44,13 +44,6 @@
         {
             "type": "composer",
             "url": "https://asset-packagist.org"
-        },
-        {
-            "type": "path",
-            "url": "../yii2-client-url",
-            "options": {
-                "symlink": true
-            }
         }
     ],
     "require-dev": {

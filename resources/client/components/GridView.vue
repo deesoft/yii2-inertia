@@ -78,7 +78,7 @@ function doFilter(field){
 </script>
 <template>
     <v-table>
-        <thead style="background:#eee">
+        <thead>
             <tr>
                 <th class="pb-1" valign="top" v-for="(column, idx) in columns" :class="column.headerClass"
                     :data-field="column.field" :key="idx">
@@ -100,8 +100,10 @@ function doFilter(field){
                     :data-field="column.field" :key="idx">
                     <template v-if="column.filter !== false">
                         <slot :name="'filter-' + column.field" v-bind="{column, value: filterState[column.filter || column.field], doFilter: doFilter(column.filter || column.field), doFilters: doReload}">
-                            <v-text-field density="compact" hide-details v-model="filterState[column.filter || column.field]"
-                            @change="doReload({[column.filter || column.field]: $event.target.value})"></v-text-field>
+                            <v-select v-if="column.filterItems && Array.isArray(column.filterItems)" :items="column.filterItems" density="compact" hide-details v-model="filterState[column.filter || column.field]"
+                                @update:modelValue="doReload({[column.filter || column.field]: $event})"></v-select>
+                            <v-text-field v-else density="compact" hide-details v-model="filterState[column.filter || column.field]"
+                                @change="doReload({[column.filter || column.field]: $event.target.value})"></v-text-field>
                         </slot>
                     </template>
                 </th>
