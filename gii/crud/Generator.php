@@ -197,7 +197,7 @@ class Generator extends \yii\gii\generators\crud\Generator
                 if (in_array($attribute, $this->excludeColumns)) {
                     continue;
                 }
-                $forms[$attribute] = "props.model.$attribute";
+                $forms[$attribute] = false;
                 $columns[$attribute] = 'unknown';
                 $inputs[] = [
                     'label' => $model->getAttributeLabel($attribute),
@@ -212,14 +212,19 @@ class Generator extends \yii\gii\generators\crud\Generator
                 ];
             }
         } else {
+            $pks = $table->primaryKey;
             foreach ($table->columns as $column) {
                 $attribute = $column->name;
                 $columns[$attribute] = $column->type;
                 if (in_array($attribute, $this->excludeColumns)) {
                     continue;
                 }
-                if (!$column->autoIncrement) {
-                    $forms[$attribute] = "props.model.{$column->name}";
+                if ($column->autoIncrement) {
+                    $forms[$attribute] = 'ai';
+                } elseif ($column->isPrimaryKey) {
+                    $forms[$attribute] = 'pk';
+                } else {
+                    $forms[$attribute] = false;
                 }
                 $step = null;
                 $skip = $column->autoIncrement;
