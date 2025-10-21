@@ -10,42 +10,23 @@ $modelClass = StringHelper::basename($generator->modelClass);
 $baseRoute = $generator->controllerID;
 
 $inputChunks = array_chunk($inputs, (count($inputs) + 1) / 2);
-$required = false;
-foreach($inputs as $input){
-    if($input['required']){
-        $required = true;
-        break;
-    }
-}
 ?>
 <script setup>
-import { useForm } from "@inertiajs/vue3";
-import { useTemplateRef, watch } from 'vue';
-<?php if($required): ?>
-import { required } from "@/composables/validation";
-<?php endif; ?>
-const {yiiUrl} = window;
+import { useForm, required, remote } from "@/composables/form";
+const { yiiUrl } = window;
 
 const props = defineProps({
     model: Object,
 });
 
-const formRef = useTemplateRef('formRef');
-const form = useForm('create<?= $modelClass?>', {
+const form = useForm('formRef', {
 <?php foreach($forms as $key => $value):?>
-    <?= $key?>: <?= $value?>,
+<?php if ($value != 'ai'): ?>
+    <?= $key?>: props.model.<?= $key?>,
+<?php endif; ?>
 <?php endforeach; ?>
 });
 
-watch(() => form.errors, errors => {
-    if(formRef.value){
-        formRef.value.items.forEach(item => {
-            if(errors[item.id]){
-                item.errorMessages.push(errors[item.id]);
-            }
-        });
-    }
-}, {deep: true});
 </script>
 <template>
     <v-container fluid>
@@ -58,14 +39,14 @@ watch(() => form.errors, errors => {
                 </p>
             </v-col>
             <v-col cols="12">
-                <v-form ref="formRef" @submit.prevent="form.post($page.url)">
+                <v-form ref="formRef" @submit.prevent="form.$submit($event)">
                     <v-card>
-                        <v-toolbar density="default">
+                        <v-toolbar density="compact">
                             <v-btn density="compact" icon="mdi-arrow-left" @click="yiiUrl.back()">
                             </v-btn>
                             <v-toolbar-title >Create <?= $modelName ?></v-toolbar-title>
                         </v-toolbar> 
-                        <v-progress-linear indeterminate v-if="form.processing"></v-progress-linear>
+                        <v-progress-linear indeterminate v-if="form.$loading"></v-progress-linear>
                         <v-divider/>
                         <v-card-text>
                             <v-row>
@@ -76,10 +57,10 @@ watch(() => form.errors, errors => {
                                         <v-col class="py-1" cols="12">
 <?php if($input['type'] != 'boolean'): ?>
                                             <v-text-field type="<?= $input['type'] ?>" name="<?= $input['field'] ?>" v-model="form.<?= $input['field'] ?>" label="<?= $input['label'] ?>"
-                                                variant="outlined" density="compact" <?= $input['required'] ? ':rules=[required]' : '' ?>></v-text-field>
+                                                variant="outlined" density="compact" :rules=[<?= $input['required'] ? 'required' : 'remote' ?>]></v-text-field>
 <?php else: ?>
                                             <v-checkbox name="<?= $input['field'] ?>" v-model="form.<?= $input['field'] ?>" label="<?= $input['label'] ?>"
-                                                variant="outlined" density="compact" <?= $input['required'] ? ':rules=[required]' : '' ?>></v-checkbox>
+                                                variant="outlined" density="compact" :rules=[<?= $input['required'] ? 'required' : 'remote' ?>]></v-checkbox>
 <?php endif; ?>
                                         </v-col>
 <?php endforeach; ?>
@@ -91,7 +72,7 @@ watch(() => form.errors, errors => {
                         <v-divider></v-divider>
                         <v-toolbar density="compact">
                             <v-spacer></v-spacer>
-                            <v-btn :loading="form.processing" variant="flat" color="primary" type="submit">Save</v-btn>
+                            <v-btn :loading="form.$loading" variant="flat" color="primary" type="submit">Save</v-btn>
                         </v-toolbar>
                     </v-card>
                 </v-form>
