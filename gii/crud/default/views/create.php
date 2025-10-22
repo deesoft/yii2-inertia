@@ -27,6 +27,13 @@ const form = useForm('formRef', {
 <?php endforeach; ?>
 });
 
+function save(event){
+    event.then(({valid}) => {
+        if(valid){
+            form.$submit();
+        }
+    });
+}
 </script>
 <template>
     <v-container fluid>
@@ -39,7 +46,7 @@ const form = useForm('formRef', {
                 </p>
             </v-col>
             <v-col cols="12">
-                <v-form ref="formRef" @submit.prevent="form.$submit($event)">
+                <v-form ref="formRef" @submit.prevent="save($event)">
                     <v-card>
                         <v-toolbar density="compact">
                             <v-btn density="compact" icon="mdi-arrow-left" @click="yiiUrl.back()">
@@ -57,10 +64,10 @@ const form = useForm('formRef', {
                                         <v-col class="py-1" cols="12">
 <?php if($input['type'] != 'boolean'): ?>
                                             <v-text-field type="<?= $input['type'] ?>" name="<?= $input['field'] ?>" v-model="form.<?= $input['field'] ?>" label="<?= $input['label'] ?>"
-                                                variant="outlined" density="compact" :rules=[<?= $input['required'] ? 'required' : 'remote' ?>]></v-text-field>
+                                                variant="outlined" density="compact" :rules="[<?= $input['required'] ? 'required' : 'remote' ?>]"></v-text-field>
 <?php else: ?>
                                             <v-checkbox name="<?= $input['field'] ?>" v-model="form.<?= $input['field'] ?>" label="<?= $input['label'] ?>"
-                                                variant="outlined" density="compact" :rules=[<?= $input['required'] ? 'required' : 'remote' ?>]></v-checkbox>
+                                                variant="outlined" density="compact" :rules="[<?= $input['required'] ? 'required' : 'remote' ?>]"></v-checkbox>
 <?php endif; ?>
                                         </v-col>
 <?php endforeach; ?>
