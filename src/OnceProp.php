@@ -3,23 +3,22 @@
 namespace dee\inertia;
 
 /**
- * Description of MergeProp
+ * Description of OnceProp
  *
  * @author Misbahul D Munir <misbahuldmunir@gmail.com>
  * @since 1.0
  */
-class MergeProp extends BaseProp implements Mergeable, Onceable
+class OnceProp extends BaseProp implements Onceable
 {
-    use ResolvesOnce, MergesProps;
+    use ResolvesOnce;
+
     /**
      *
-     * @var bool
+     * @param mixed|\Closure $value
      */
-    protected $mustClosure = false;
-
     public function __construct($value)
     {
+        $this->once = true;
         parent::__construct($value);
-        $this->merge = true;
     }
 }

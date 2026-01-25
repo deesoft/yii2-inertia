@@ -15,4 +15,6 @@ class Header
     public const PARTIAL_EXCEPT = 'X-Inertia-Partial-Except';
     public const RESET = 'X-Inertia-Reset';
     public const REDIRECT = 'X-Redirect';
+    public const INFINITE_SCROLL_MERGE_INTENT = 'X-Inertia-Infinite-Scroll-Merge-Intent';
+    public const EXCEPT_ONCE_PROPS = 'X-Inertia-Except-Once-Props';
 }

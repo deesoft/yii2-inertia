@@ -4,13 +4,9 @@ namespace dee\inertia;
 
 use Yii;
 use Closure;
-use dee\clientUrl\Helper;
-use stdClass;
-use yii\web\View;
-use yii\helpers\Url;
-use yii\helpers\Html;
-use yii\web\Response;
+use yii\db\QueryInterface;
 use yii\helpers\ArrayHelper;
+use yii\data\DataProviderInterface;
 
 class Inertia
 {
@@ -23,24 +19,46 @@ class Inertia
      * @var string[]
      */
     public static $errors = [];
+    /**
+     * @var array<string, mixed>
+     */
     protected static $shared = [];
+    /**
+     * @var bool
+     */
     protected static $encryptHistory = false;
+    /**
+     * @var ResponseFactory
+     */
+    protected static $responseFactory;
 
+    /**
+     * @return ResponseFactory
+     */
+    protected static function getResponseFactory()
+    {
+        if (static::$responseFactory === null) {
+            static::$responseFactory = new ResponseFactory();
+        }
+        return static::$responseFactory;
+    }
     /**
      * Encrypt history
      * @param bool $value
+     * @return ResponseFactory
      */
     public static function encryptHistory($value = true)
     {
-        self::$encryptHistory = $value;
+        return static::getResponseFactory()->encryptHistory($value);
     }
 
     /**
      * Clear history
+     * @return ResponseFactory
      */
     public static function clearHistory()
     {
-        Yii::$app->session->setFlash('inertia_clear_history', true);
+        return static::getResponseFactory()->clearHistory();
     }
 
     /**
@@ -54,6 +72,14 @@ class Inertia
         } elseif (is_scalar($key)) {
             static::$shared[$key] = $value;
         }
+    }
+
+    /**
+     * @return mixed $value
+     */
+    public static function getShared()
+    {
+        return static::$shared;
     }
 
     /**
@@ -85,158 +111,43 @@ class Inertia
     /**
      * @param string $component
      * @param array $params
-     * @return Response
+     * @return ResponseFactory
      */
     public static function render($component, $params = [])
     {
-        $request = Yii::$app->request;
-        $response = Yii::$app->response;
-
-        $shared = static::config('shared');
-        $params = array_merge($shared, static::$shared, $params);
-
-        list($props, $deferredProps, $mergeProps) = static::resolvePage($component, $params);
-        $props = static::serializer()->serialize($props);
-        $errors = Yii::$app->session->getFlash('errors', []);
-        foreach (static::$errors as $key => $value) {
-            $errors[$key] = $value;
-        }
-        static::$errors = [];
-        if ($errors) {
-            if ($request->headers->has(Header::ERROR_BAG)) {
-                $props['errors'][$request->headers->get(Header::ERROR_BAG)] = (array) $errors;
-            } else {
-                $props['errors'] = (array) $errors;
-            }
-        }
-        $props['$r'] = [Yii::$app->controller->route, $request->getQueryParams() ? : new stdClass()];
-
-        $data = [
-            'component' => $component,
-            'props' => $props,
-            'url' => $request->getUrl(),
-            'version' => static::getVersion(),
-            'deferredProps' => $deferredProps,
-            'mergeProps' => $mergeProps,
-            'encryptHistory' => static::$encryptHistory || static::config('encrypt_history'),
-            'clearHistory' => Yii::$app->session->getFlash('inertia_clear_history'),
-        ];
-
-        if ($request->headers->has(Header::INERTIA)) {
-            $response->headers->set(Header::INERTIA, 'true');
-            $response->format = 'json';
-            $response->data = $data;
-            return $response;
-        }
-
-        $tag = static::config('tag');
-        $id = static::config('id');
-        $content = Html::tag($tag, '', ['id' => $id, 'data' => ['page' => $data]]);
-        $view = Yii::$app->view;
-        static::registerJs($view);
-        $viewFile = static::config('view_file');
-        $response->data = $view->render($viewFile, ['content' => $content]);
-        $response->format = 'html';
-        return $response;
+        return static::getResponseFactory()->render($component, $params);
     }
 
     /**
-     *
-     * @param View $view
+     * Force redirect
+     * @param string|array $url
+     * @return ResponseFactory
      */
-    protected static function registerJs($view)
+    public static function location($url)
     {
-        if (static::config('register_yii_url_asset')) {
-            Helper::registerJs($view);
-        }
-
-        if (static::config('register_vite_asset')) {
-            ViteAsset::register($view);
-        }
+        return static::getResponseFactory()->location($url);
     }
 
     /**
-     *
-     * @param string $component
-     * @param array|mixed $params
-     * @return array
+     * 
+     * @param string|array $key
+     * @param mixed $value
+     * @return ResponseFactory
      */
-    protected static function resolvePage($component, $params = [])
+    public static function flash($key, $value = null)
     {
-        list($partial, $only, $except, $reset) = static::resolvePartial($component);
-        $props = [];
-        $deferredProps = [];
-        $mergeProps = [];
-        if ($partial) {
-            foreach ($params as $key => $value) {
-                if ($value instanceof DeferProp && in_array($key, $only)) {
-                    $props[$key] = call_user_func($value);
-                    if ($value->shouldMerge && !in_array($key, $reset)) {
-                        $mergeProps[] = $key;
-                    }
-                } elseif ($value instanceof AlwaysProp) {
-                    $props[$key] = call_user_func($value);
-                } elseif ($value instanceof LazyProp) {
-                    if ($only && in_array($key, $only)) {
-                        $props[$key] = call_user_func($value);
-                    }
-                } elseif ((!$only || in_array($key, $only)) && (!$except || !in_array($key, $except))) {
-                    if ($value instanceof MergeProp) {
-                        $props[$key] = call_user_func($value);
-                        if (!in_array($key, $reset)) {
-                            $mergeProps[] = $key;
-                        }
-                    } elseif ($value instanceof Closure || is_callable($value)) {
-                        $props[$key] = call_user_func($value);
-                    } else {
-                        $props[$key] = $value;
-                    }
-                }
-            }
-        } else {
-            foreach ($params as $key => $value) {
-                if ($value instanceof DeferProp) {
-                    $deferredProps[$value->group][] = $key;
-                } elseif ($value instanceof LazyProp) {
-                    continue;
-                } elseif ($value instanceof BaseProp || $value instanceof Closure || is_callable($value)) {
-                    $props[$key] = call_user_func($value);
-                } else {
-                    $props[$key] = $value;
-                }
-            }
-        }
-        return [$props, $deferredProps, $mergeProps];
-    }
-
-    /**
-     * @return Serializer
-     */
-    public static function serializer()
-    {
-        if (static::$serializer === null) {
-            $config = static::config('serializer');
-            if (is_string($config)) {
-                $config = ['class' => $config];
-            }
-            if (is_array($config) && !isset($config['class'])) {
-                $config['class'] = Serializer::class;
-            }
-            static::$serializer = Yii::createObject($config);
-        }
-        return static::$serializer;
+        return static::getResponseFactory()->flash($key, $value);
     }
 
     /**
      *
      * @param Closure $callback
      * @param string $group
-     * @param bool $merge 
      * @return DeferProp
      */
-    public static function defer($callback, $group = '', $merge = false)
+    public static function defer($callback, $group = '')
     {
-        return new DeferProp($callback, $group, $merge);
+        return new DeferProp($callback, $group);
     }
 
     /**
@@ -262,26 +173,33 @@ class Inertia
     /**
      *
      * @param Closure $value
-     * @return LazyProp
+     * @return OptionalProp
      */
-    public static function lazy($value)
+    public static function optional($value)
     {
-        return new LazyProp($value);
+        return new OptionalProp($value);
     }
 
-    protected static function resolvePartial($component)
+    /**
+     *
+     * @param Closure $value
+     * @return OnceProp
+     */
+    public static function once($value)
     {
-        $request = Yii::$app->request;
-        if ($request->headers->get(Header::PARTIAL_COMPONENT) == $component) {
-            $only = $request->headers->get(Header::PARTIAL_ONLY);
-            $only = $only ? preg_split('/\s*,\s*/', $only, -1, PREG_SPLIT_NO_EMPTY) : null;
-            $except = $request->headers->get(Header::PARTIAL_EXCEPT);
-            $except = $only ? preg_split('/\s*,\s*/', $except, -1, PREG_SPLIT_NO_EMPTY) : null;
-            $reset = $request->headers->get(Header::RESET);
-            $reset = $only ? preg_split('/\s*,\s*/', $reset, -1, PREG_SPLIT_NO_EMPTY) : null;
-            return [true, $only, $except, $reset];
-        }
-        return [false, null, null, null];
+        return new OnceProp($value);
+    }
+
+    /**
+     *
+     * @param DataProviderInterface|QueryInterface $value
+     * @param string $wrapper
+     * @param array $options
+     * @return ScrollProp
+     */
+    public static function scroll($value, $wrapper = 'data', $options = [])
+    {
+        return new ScrollProp($value, $wrapper, $options);
     }
 
     /**
@@ -291,23 +209,9 @@ class Inertia
     public static function getVersion()
     {
         $bundle = Yii::$app->assetManager->getBundle(ViteAsset::class, false);
-        if($bundle && $bundle instanceof ViteAsset){
+        if ($bundle && $bundle instanceof ViteAsset) {
             return $bundle->getVersion();
         }
         return md5(Yii::getVersion() . Inertia::class);
-    }
-
-    /**
-     * Force redirect
-     * @param string|array $url
-     * @return Response
-     */
-    public static function location($url)
-    {
-        $url = Url::to($url);
-        $response = Yii::$app->getResponse();
-        $response->setStatusCode(409);
-        $response->headers->set('X-Inertia-Location', $url);
-        return $response;
     }
 }

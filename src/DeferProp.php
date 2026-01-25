@@ -8,27 +8,20 @@ namespace dee\inertia;
  * @author Misbahul D Munir <misbahuldmunir@gmail.com>
  * @since 1.0
  */
-class DeferProp extends BaseProp
+class DeferProp extends BaseProp implements Mergeable, Onceable, IgnoreFirstLoad
 {
-    public $group;
-    public $shouldMerge = false;
+    use ResolvesOnce, MergesProps;
 
-    public function __construct($value, $group = '', $merge = false)
+    protected $group;
+
+    public function __construct($value, $group = '')
     {
         $this->group = $group;
-        $this->shouldMerge = $merge;
         parent::__construct($value);
     }
 
-    public function merge($value = true)
+    public function group()
     {
-        $this->shouldMerge = $value;
-        return $this;
-    }
-
-    public function group($group)
-    {
-        $this->group = $group;
-        return $this;
+        return $this->group;
     }
 }

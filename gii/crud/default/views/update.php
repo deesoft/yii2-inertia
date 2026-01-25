@@ -13,14 +13,16 @@ $class = $generator->modelClass;
 $inputChunks = array_chunk($inputs, (count($inputs) + 1) / 2);
 ?>
 <script setup>
-import { useForm, required, remote } from "@/composables/form";
+import { required, remote } from "@/composables/form";
+import { useForm, usePage } from "@inertiajs/vue3";
 const { yiiUrl } = window;
 
+const page = usePage();
 const props = defineProps({
     model: Object,
 });
 
-const form = useForm('formRef', {
+const form = useForm({
 <?php foreach($forms as $key => $value):?>
 <?php if ($value != 'ai'): ?>
     <?= $key?>: props.model.<?= $key?>,
@@ -28,12 +30,8 @@ const form = useForm('formRef', {
 <?php endforeach; ?>
 });
 
-function save(event){
-    event.then(({valid}) => {
-        if(valid){
-            form.$submit();
-        }
-    });
+function save() {
+    form.post(page.url);
 }
 </script>
 <template>
@@ -47,13 +45,13 @@ function save(event){
                 </p>          
             </v-col>
             <v-col cols="12">
-                <v-form ref="formRef" @submit.prevent="save($event)">
+                <DForm :errors="form.errors" @submit="save()">
                     <v-card>
                         <v-toolbar density="compact">
                             <v-btn density="compact" icon="mdi-arrow-left" @click="yiiUrl.back()"></v-btn>
                             <v-toolbar-title >Update <?= $modelName ?></v-toolbar-title>
                         </v-toolbar> 
-                        <v-progress-linear indeterminate v-if="form.$loading"></v-progress-linear>
+                        <v-progress-linear indeterminate v-if="form.processing"></v-progress-linear>
                         <v-divider/>
                         <v-card-text>
                             <v-row>
@@ -79,10 +77,10 @@ function save(event){
                         <v-divider></v-divider>
                         <v-toolbar density="compact">
                             <v-spacer></v-spacer>
-                            <v-btn :loading="form.$loading" variant="flat" color="primary" type="submit">Save</v-btn>
+                            <v-btn :loading="form.processing" variant="flat" color="primary" type="submit">Save</v-btn>
                         </v-toolbar>
                     </v-card>
-                </v-form>
+                </DForm>
             </v-col>
         </v-row>
     </v-container>

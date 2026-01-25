@@ -2,6 +2,8 @@
 
 namespace dee\inertia;
 
+use yii\base\InvalidArgumentException;
+
 /**
  * Description of BaseProp
  *
@@ -24,12 +26,12 @@ class BaseProp
     /**
      *
      * @param mixed|\Closure $value
-     * @throws InvalidParamException
+     * @throws InvalidArgumentException
      */
     public function __construct($value)
     {
         if($this->mustClosure && !($value instanceof \Closure || is_callable($value))){
-            throw new InvalidParamException('Value must a callback');
+            throw new InvalidArgumentException('Value must a callback');
         }
         $this->value = $value;
     }

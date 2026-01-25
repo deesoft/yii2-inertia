@@ -16,15 +16,13 @@ import { router } from "@inertiajs/vue3";
 import { ref } from 'vue';
 import { $bus } from '@/composables/global';
 import { useVForm, required, remote } from "@/composables/form";
+const { yiiUrl } = window;
 
 const show = ref(false);
-const form = useVForm('formRef', {
+const form = useVForm({
 <?php foreach($forms as $key => $value):?>
     <?= $key ?>: <?= $value ? 'true' : 'false' ?>,
 <?php endforeach; ?>
-}, {
-    create: '<?= $baseRoute ?>/create',
-    update: '<?= $baseRoute ?>/update',
 });
 
 function open(row){
@@ -32,24 +30,21 @@ function open(row){
     show.value = true;
 }
 
-function save(event){
-    event.then(({valid}) => {
-        if(valid){
-            form.$submit().then(() => {
-                show.value = false;
-                router.reload();
-            }).catch(error => {
-                $bus.emit('toast', error.response.statusText);
-            });
-        }
-    });    
+function save(){
+    const url = form.$isNew ? yiiUrl('<?= $baseRoute ?>/create') : yiiUrl('<?= $baseRoute ?>/update', form.$keys);
+    form.$submit(url).then(() => {
+        show.value = false;
+        router.reload();
+    }).catch(error => {
+        $bus.emit('toast', error.response.statusText);
+    });   
 }
 
 defineExpose({ open });
 </script>
 <template>
     <v-dialog v-model="show" persistent max-width="720">
-        <v-form ref="formRef" @submit.prevent="save($event)">
+        <DForm :errors="form.errors" @submit="save()">
             <v-card>
                 <v-toolbar density="compact" :title="(form.$isNew ? 'New ' : 'Edit ') + '<?= $modelName ?>'">
                     <template v-slot:append>
@@ -83,6 +78,6 @@ defineExpose({ open });
                     <v-btn dark color="error darken-1" text type="submit">Save</v-btn>
                 </v-card-actions>
             </v-card>
-        </v-form>
+        </DForm>
     </v-dialog>
 </template>
