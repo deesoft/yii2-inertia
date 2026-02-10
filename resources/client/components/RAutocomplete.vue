@@ -11,6 +11,7 @@ const props = defineProps({
     itemParams: { type: Object },
     itemTitle: { type: String, default: 'name' },
     itemValue: { type: String, default: 'id' },
+    searchParam: { type: String, default: 'q' },
 });
 const emit = defineEmits(['changed']);
 
@@ -40,7 +41,7 @@ function doSearch(value) {
     return new Promise((resolve, reject) => {
         if (!state.loading) {
             state.loading = true;
-            axios.get(yiiUrl(props.route, {...(props.params || {}), q: value})).then(res => {
+            axios.get(yiiUrl(props.route, {...(props.params || {}), [props.searchParam]: value})).then(res => {
                 state.items = res.data;
                 state.loading = false;
                 resolve(true);

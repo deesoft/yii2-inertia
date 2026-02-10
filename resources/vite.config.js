@@ -30,7 +30,7 @@ export default defineConfig(() => {
                         '@inertiajs/vue3': [
                             'usePage',
                             'router',
-                            'InertiaForm',
+                            'useForm',
                             'useRemember',
                         ],
                         'axios': [

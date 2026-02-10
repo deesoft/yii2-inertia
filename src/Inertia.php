@@ -11,22 +11,9 @@ use yii\data\DataProviderInterface;
 class Inertia
 {
     /**
-     * @var Serializer
-     */
-    public static $serializer;
-    /**
-     *
-     * @var string[]
-     */
-    public static $errors = [];
-    /**
      * @var array<string, mixed>
      */
     protected static $shared = [];
-    /**
-     * @var bool
-     */
-    protected static $encryptHistory = false;
     /**
      * @var ResponseFactory
      */
@@ -38,27 +25,16 @@ class Inertia
     protected static function getResponseFactory()
     {
         if (static::$responseFactory === null) {
-            static::$responseFactory = new ResponseFactory();
+            $config = static::config('response_factory');
+            if(is_string($config)){
+                $config['class'] = $config;
+            }
+            if(!isset($config['class'])){
+                $config['class'] = ResponseFactory::class;
+            }
+            static::$responseFactory = Yii::createObject($config);
         }
         return static::$responseFactory;
-    }
-    /**
-     * Encrypt history
-     * @param bool $value
-     * @return ResponseFactory
-     */
-    public static function encryptHistory($value = true)
-    {
-        return static::getResponseFactory()->encryptHistory($value);
-    }
-
-    /**
-     * Clear history
-     * @return ResponseFactory
-     */
-    public static function clearHistory()
-    {
-        return static::getResponseFactory()->clearHistory();
     }
 
     /**
@@ -100,6 +76,7 @@ class Inertia
             'register_yii_url_asset' => true,
             'vite_port' => '5173',
             'vite_prod' => false,
+            'response_factory' => []
         ];
         if (($value = ArrayHelper::getValue(Yii::$app->params, "inertia.$key")) !== null) {
             return $value;
@@ -116,6 +93,16 @@ class Inertia
     public static function render($component, $params = [])
     {
         return static::getResponseFactory()->render($component, $params);
+    }
+
+    /**
+     * @param string|array $key
+     * @param mixed $value
+     * @return ResponseFactory
+     */
+    public static function with($key, $value = null)
+    {
+        return static::getResponseFactory()->with($key, $value);
     }
 
     /**
@@ -137,6 +124,25 @@ class Inertia
     public static function flash($key, $value = null)
     {
         return static::getResponseFactory()->flash($key, $value);
+    }
+
+    /**
+     * Encrypt history
+     * @param bool $value
+     * @return ResponseFactory
+     */
+    public static function encryptHistory($value = true)
+    {
+        return static::getResponseFactory()->encryptHistory($value);
+    }
+
+    /**
+     * Clear history
+     * @return ResponseFactory
+     */
+    public static function clearHistory()
+    {
+        return static::getResponseFactory()->clearHistory();
     }
 
     /**
@@ -208,7 +214,7 @@ class Inertia
      */
     public static function getVersion()
     {
-        $bundle = Yii::$app->assetManager->getBundle(ViteAsset::class, false);
+        $bundle = Yii::$app->assetManager->getBundle(ViteAsset::class);
         if ($bundle && $bundle instanceof ViteAsset) {
             return $bundle->getVersion();
         }

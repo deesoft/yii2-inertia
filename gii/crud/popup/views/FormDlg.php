@@ -9,7 +9,7 @@ use yii\helpers\StringHelper;
 $modelClass = StringHelper::basename($generator->modelClass);
 $baseRoute = $generator->controllerID;
 $class = $generator->modelClass;
-$inputChunks = array_chunk($inputs, (count($inputs) + 1) / 2);
+$inputChunks = array_chunk($inputs, 2);
 ?>
 <script setup>
 import { router } from "@inertiajs/vue3";
@@ -36,7 +36,7 @@ function save(){
         show.value = false;
         router.reload();
     }).catch(error => {
-        $bus.emit('toast', error.response.statusText);
+        $bus.emit('toast', {color: 'error', message: error.response.statusText});
     });   
 }
 
@@ -52,25 +52,21 @@ defineExpose({ open });
                     </template>
                 </v-toolbar>
                 <v-card-text>
-                    <v-row>
 <?php foreach($inputChunks as $parts): ?>
-                        <v-col xl="6" md="6" sm="6" cols="12">
-                            <v-row>
+                    <v-row>
 <?php foreach($parts as $input): ?>
-                                <v-col class="py-1" cols="12">
+                        <v-col class="py-1" sm="6" cols="12">
 <?php if($input['type'] != 'boolean'): ?>
-                                    <v-text-field type="<?= $input['type'] ?>" name="<?= $input['field'] ?>" v-model="form.<?= $input['field'] ?>" label="<?= $input['label'] ?>"
-                                        variant="outlined" density="compact" :rules="[<?= $input['required'] ? 'required' : 'remote' ?>]"></v-text-field>
+                            <v-text-field type="<?= $input['type'] ?>" name="<?= $input['field'] ?>" v-model="form.<?= $input['field'] ?>" label="<?= $input['label'] ?>"
+                                variant="outlined" density="compact" :rules="[<?= $input['required'] ? 'required' : 'remote' ?>]"></v-text-field>
 <?php else: ?>
-                                    <v-checkbox name="<?= $input['field'] ?>" v-model="form.<?= $input['field'] ?>" label="<?= $input['label'] ?>"
-                                        variant="outlined" density="compact" :rules="[<?= $input['required'] ? 'required' : 'remote' ?>]"></v-checkbox>
+                            <v-checkbox name="<?= $input['field'] ?>" v-model="form.<?= $input['field'] ?>" label="<?= $input['label'] ?>"
+                                variant="outlined" density="compact" :rules="[<?= $input['required'] ? 'required' : 'remote' ?>]"></v-checkbox>
 <?php endif; ?>
-                                </v-col>
-<?php endforeach; ?>
-                            </v-row>
                         </v-col>
 <?php endforeach; ?>
                     </v-row>
+<?php endforeach; ?>
                 </v-card-text>
                 <v-card-actions class="pt-0">
                     <v-spacer></v-spacer>
