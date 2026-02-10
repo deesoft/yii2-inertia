@@ -70,7 +70,7 @@ function deleteRow(row){
                         <template #d-no="{line}">{{ line }}</template>
                         <template #d-action="{row}">
                             <v-btn density="compact" size="small" icon="mdi-pencil" @click="formDlg.open(row)"></v-btn>
-                            <v-btn density="compact" size="small" icon="mdi-delete" @click="deleteRow(row)"></v-btn>                            
+                            <v-btn density="compact" size="small" icon="mdi-delete" @click="deleteRow(row)"></v-btn>
                         </template>
                     </GridView>
                 </v-card>

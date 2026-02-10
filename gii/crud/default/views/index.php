@@ -69,7 +69,7 @@ function deleteRow(row){
                         <template #d-action="{row}">
                             <v-btn density="compact" size="small" icon="mdi-eye" :to="yiiUrl('<?= $baseRoute ?>/view', {<?= $urlParams ?>})"></v-btn>
                             <v-btn density="compact" size="small" icon="mdi-pencil" :to="yiiUrl('<?= $baseRoute ?>/update', {<?= $urlParams ?>})"></v-btn>
-                            <v-btn density="compact" size="small" icon="mdi-delete" @click="deleteRow(row)"></v-btn>                            
+                            <v-btn density="compact" size="small" icon="mdi-delete" @click="deleteRow(row)"></v-btn>
                         </template>
                     </GridView>
                 </v-card>
