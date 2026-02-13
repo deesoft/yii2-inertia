@@ -22,6 +22,6 @@ function doSearch() {
 }
 </script>
 <template>
-    <v-text-field v-model="q" hide-details prepend-append-icon="mdi-magnify"
-        @click:append-inner="doSearch" @change="doSearch"></v-text-field>
+    <v-text-field v-model="q" hide-details append-inner-icon="mdi-magnify" @click:append-inner="doSearch"
+        @change="doSearch($event.target.value)"></v-text-field>
 </template>

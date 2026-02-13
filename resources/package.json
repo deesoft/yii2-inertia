@@ -5,8 +5,8 @@
     "description": "Yii2 App inertia js",
     "scripts": {
         "dev": "vite",
-        "build": "vite build",
-        "watch": "vite build --watch"
+        "build": "vite build --base=./",
+        "watch": "vite build --watch --base=./"
     },
     "keywords": [],
     "author": {

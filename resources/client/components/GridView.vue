@@ -10,8 +10,13 @@ const props = defineProps({
     reload: { type: Boolean, default: true },
     filter: { type: Boolean, default: true },
     filters: { type: Object },
+    itemsName: {type: String, default: 'items'},
+    metaName: {type: String, default: 'meta'},
+    linksName: {type: String, default: 'links'},
 });
-const items = computed(() => props.data.items ? props.data.items : props.data);
+const items = computed(() => props.data[props.itemsName] ? props.data[props.itemsName] : props.data);
+const meta = computed(() => props.data[props.metaName] ? props.data[props.metaName] : null);
+const links = computed(() => props.data[props.linksName] ? props.data[props.linksName] : null);
 const emit = defineEmits(['reload']);
 
 function doReload(param) {
@@ -36,8 +41,8 @@ function calcRowClass(row, i) {
     return props.rowClass;
 }
 function lineNo(i) {
-    if (props.data.meta) {
-        return (props.data.meta.currentPage - 1) * props.data.meta.perPage + i + 1;
+    if (meta.value) {
+        return (meta.value.currentPage - 1) * meta.value.perPage + i + 1;
     }
     return i + 1;
 }
@@ -121,10 +126,10 @@ function doFilter(field){
                 </td>
             </tr>
         </tbody>
-        <tfoot v-if="data.meta">
+        <tfoot v-if="meta">
             <tr>
                 <td :colspan="columns.length">
-                    <Pagination :meta="data.meta" :links="data.links" :reload="reload" @reload="doReload"></Pagination>
+                    <Pagination :meta="meta" :links="links" :reload="reload" @reload="doReload"></Pagination>
                 </td>
             </tr>
         </tfoot>

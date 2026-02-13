@@ -37,10 +37,6 @@ class Generator extends \yii\gii\generators\crud\Generator
     public $clientPath = '@client/pages';
     public $excludeColumns = ['created_at', 'created_by', 'updated_at', 'updated_by', 'is_deleted'];
     public $modelNsSearch = [];
-    /**
-     * @var bool Using v-list for view
-     */
-    public $viewList = false;
     private $_controllerClass;
 
     /**
@@ -83,7 +79,7 @@ class Generator extends \yii\gii\generators\crud\Generator
             [['controllerID'], 'match', 'pattern' => '/^[a-z][a-z0-9\\-\\/]*$/', 'message' => 'Only a-z, 0-9, dashes (-) and slashes (/) are allowed.'],
             [['searchModelClass'], 'validateNewClass'],
             [['modelClass'], 'validateModelClass'],
-            [['enableI18N', 'inlineSearch', 'viewList'], 'boolean'],
+            [['enableI18N', 'inlineSearch'], 'boolean'],
             [['messageCategory'], 'validateMessageCategory', 'skipOnEmpty' => false],
         ]);
     }

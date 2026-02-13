@@ -10,17 +10,19 @@ $modelClass = StringHelper::basename($generator->modelClass);
 $baseRoute = $generator->controllerID;
 $class = $generator->modelClass;
 
-$inputChunks = array_chunk($inputs, (count($inputs) + 1) / 2);
+$inputChunks = array_chunk($inputs, 2);
 ?>
 <script setup>
-import { useForm, required, remote } from "@/composables/form";
+import { required, remote } from "@/composables/form";
+import { useForm, usePage } from "@inertiajs/vue3";
 const { yiiUrl } = window;
 
+const page = usePage();
 const props = defineProps({
     model: Object,
 });
 
-const form = useForm('formRef', {
+const form = useForm({
 <?php foreach($forms as $key => $value):?>
 <?php if ($value != 'ai'): ?>
     <?= $key?>: props.model.<?= $key?>,
@@ -28,12 +30,8 @@ const form = useForm('formRef', {
 <?php endforeach; ?>
 });
 
-function save(event){
-    event.then(({valid}) => {
-        if(valid){
-            form.$submit();
-        }
-    });
+function save() {
+    form.post(page.url);
 }
 </script>
 <template>
@@ -47,42 +45,38 @@ function save(event){
                 </p>          
             </v-col>
             <v-col cols="12">
-                <v-form ref="formRef" @submit.prevent="save($event)">
+                <DForm :errors="form.errors" @submit="save()">
                     <v-card>
                         <v-toolbar density="compact">
-                            <v-btn density="compact" icon="mdi-arrow-left" @click="yiiUrl.back()"></v-btn>
+                            <v-btn density="compact" icon="mdi-arrow-left" :to="yiiUrl('<?= $baseRoute ?>/index')"></v-btn>
                             <v-toolbar-title >Update <?= $modelName ?></v-toolbar-title>
                         </v-toolbar> 
-                        <v-progress-linear indeterminate v-if="form.$loading"></v-progress-linear>
+                        <v-progress-linear indeterminate v-if="form.processing"></v-progress-linear>
                         <v-divider/>
                         <v-card-text>
-                            <v-row>
 <?php foreach($inputChunks as $parts): ?>
-                                <v-col xl="6" md="6" sm="6" cols="12">
-                                    <v-row>
+                            <v-row>
 <?php foreach($parts as $input): ?>
-                                        <v-col class="py-1" cols="12">
+                                <v-col class="py-1" sm="6" cols="12">
 <?php if($input['type'] != 'boolean'): ?>
-                                            <v-text-field type="<?= $input['type'] ?>" name="<?= $input['field'] ?>" v-model="form.<?= $input['field'] ?>" label="<?= $input['label'] ?>"
-                                                variant="outlined" density="compact" :rules="[<?= $input['required'] ? 'required' : 'remote' ?>]"></v-text-field>
+                                    <v-text-field type="<?= $input['type'] ?>" name="<?= $input['field'] ?>" v-model="form.<?= $input['field'] ?>" label="<?= $input['label'] ?>"
+                                        variant="outlined" density="compact" :rules="[<?= $input['required'] ? 'required' : 'remote' ?>]"></v-text-field>
 <?php else: ?>
-                                            <v-checkbox name="<?= $input['field'] ?>" v-model="form.<?= $input['field'] ?>" label="<?= $input['label'] ?>"
-                                                variant="outlined" density="compact" :rules="[<?= $input['required'] ? 'required' : 'remote' ?>]"></v-checkbox>
+                                    <v-checkbox name="<?= $input['field'] ?>" v-model="form.<?= $input['field'] ?>" label="<?= $input['label'] ?>"
+                                        variant="outlined" density="compact" :rules="[<?= $input['required'] ? 'required' : 'remote' ?>]"></v-checkbox>
 <?php endif; ?>
-                                        </v-col>
-<?php endforeach; ?>
-                                    </v-row>
                                 </v-col>
 <?php endforeach; ?>
                             </v-row>
+<?php endforeach; ?>
                         </v-card-text>
                         <v-divider></v-divider>
                         <v-toolbar density="compact">
                             <v-spacer></v-spacer>
-                            <v-btn :loading="form.$loading" variant="flat" color="primary" type="submit">Save</v-btn>
+                            <v-btn :loading="form.processing" variant="flat" color="primary" type="submit">Save</v-btn>
                         </v-toolbar>
                     </v-card>
-                </v-form>
+                </DForm>
             </v-col>
         </v-row>
     </v-container>

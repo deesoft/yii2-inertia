@@ -3,12 +3,12 @@
 namespace dee\inertia;
 
 /**
- * Description of LazyProp
+ * Description of OptionalProp
  *
  * @author Misbahul D Munir <misbahuldmunir@gmail.com>
  * @since 1.0
  */
-class LazyProp extends BaseProp
+class OptionalProp extends BaseProp implements IgnoreFirstLoad
 {
 
 }

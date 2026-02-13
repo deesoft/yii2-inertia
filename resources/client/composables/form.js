@@ -1,7 +1,5 @@
-import { reactive, useTemplateRef } from "vue";
-import { useForm as inertiaForm, usePage, router } from "@inertiajs/vue3";
+import { computed, reactive } from "vue";
 import axios from 'axios';
-const { yiiUrl } = window;
 
 export const required = (value) => (value !== null && value !== '') || 'Field is required';
 export function minLength(min) {
@@ -22,8 +20,7 @@ export const url = value => value === null || URL_PATTERN.test(value) || 'Invali
 
 export const remote = () => true;
 
-export function useVForm(formRef, keys, routes) {
-    const form = typeof formRef === 'string' ? useTemplateRef(formRef) : formRef;
+export function useVForm(keys) {
     const stateKeys = { ...keys }, _primaryKeys = {}, _model = {}, pks = [];
     Object.entries(stateKeys).forEach(([key, val]) => {
         _model[key] = null;
@@ -35,7 +32,9 @@ export function useVForm(formRef, keys, routes) {
     const primaryKeys = reactive(_primaryKeys);
     const model = reactive({
         ..._model,
-        $isNew: computed(() => pks.length === 0 || pks.some(key => primaryKeys[key] === null)),
+        $isNew: computed(() => pks.length === 0 || pks.some(key => primaryKeys[key] === null || primaryKeys[key] === '')),
+        $keys: computed(() => primaryKeys),
+        errors: null,
         $reset(row) {
             Object.entries(stateKeys).forEach(([key, val]) => {
                 model[key] = row ? row[key] : null;
@@ -44,22 +43,20 @@ export function useVForm(formRef, keys, routes) {
                 }
             });
         },
-        async $submit() {
+        async $submit(url) {
             const post = {};
             Object.entries(stateKeys).forEach(([key, val]) => {
                 post[key] = model[key];
             });
-            const url = model.$isNew ? yiiUrl(routes.create) : yiiUrl(routes.update, primaryKeys);
-            return axios.post(url, post).catch(error => {
+            const data = hasFiles(post) ? objectToFormData(post) : post;
+            return axios.post(url, data).then(r => {
+                if (model.errors) {
+                    model.errors = null;
+                }
+                return r;
+            }).catch(error => {
                 if (error.response.status == 422) {
-                    const errors = error.response.data;
-                    if (form.value) {
-                        form.value.items.forEach(item => {
-                            if (errors[item.id]) {
-                                item.errorMessages.push(errors[item.id]);
-                            }
-                        });
-                    }
+                    model.errors = error.response.data;
                 }
                 throw error;
             });
@@ -68,81 +65,62 @@ export function useVForm(formRef, keys, routes) {
     return model;
 }
 
-export function useForm(formRef, data) {
-    const form = typeof formRef === 'string' ? useTemplateRef(formRef) : formRef;
-    const keys = Object.keys(data);
-    const model = reactive({
-        ...data,
-        $loading: false,
-        $submit(options) {
-            const post = {};
-            keys.forEach(k => post[k] = model[k]);
-            const opts = options || {};
-            router.post(usePage().url, post, {
-                onStart(visit) {
-                    model.$loading = true;
-                    if (opts.onStart) {
-                        return opts.onStart(visit);
-                    }
-                },
-                onCancel() {
-                    model.$loading = false;
-                    if (opts.onCancel) {
-                        return opts.onCancel();
-                    }
-                },
-                onFinish(visit) {
-                    model.$loading = false;
-                    if (opts.onFinish) {
-                        return opts.onFinish(visit);
-                    }
-                },
-                onSuccess(page) {
-                    model.$loading = false;
-                    if (opts.onSuccess) {
-                        return opts.onSuccess(page);
-                    }
-                },
-                onError(errors) {
-                    model.$loading = false;
-                    if (form.value) {
-                        form.value.items.forEach(item => {
-                            if (errors[item.id]) {
-                                item.errorMessages.push(errors[item.id]);
-                            }
-                        });
-                    }
-                    if (opts.onError) {
-                        return opts.onError(errors);
-                    }
-                },
-            });
-        }
-    });
-    return model;
+/**
+ * 
+ * @param {any} data 
+ * @returns {Boolean}
+ */
+function hasFiles(data) {
+    return (
+        data instanceof File ||
+        data instanceof Blob ||
+        (data instanceof FileList && data.length > 0) ||
+        (data instanceof FormData && Array.from(data.values()).some((value) => hasFiles(value))) ||
+        (typeof data === 'object' && data !== null && Object.values(data).some((value) => hasFiles(value)))
+    );
 }
 
-export function useInertiaForm(formRef, data) {
-    const form = typeof formRef === 'string' ? useTemplateRef(formRef) : formRef;
-    const model = inertiaForm({
-        ...data,
-        $submit(options) {
-            const opts = options || {};
-            const onError = opts.onError;
-            opts.onError = errors => {
-                if (form.value) {
-                    form.value.items.forEach(item => {
-                        if (errors[item.id]) {
-                            item.errorMessages.push(errors[item.id]);
-                        }
-                    });
-                }
-                if (onError) {
-                    return onError(errors);
-                }
-            };
-            model.post(usePage().url, opts);
+/**
+ * 
+ * @param {Object} source 
+ * @param {FormData|null} form 
+ * @param {String|null} parentKey 
+ * @returns {FormData}
+ */
+function objectToFormData(source, form, parentKey) {
+    source = source || {};
+    form = form || new FormData();
+    for (const key in source) {
+        if (Object.prototype.hasOwnProperty.call(source, key)) {
+            append(form, composeKey(parentKey, key), source[key]);
         }
-    });
-    return model;
+    }
+
+    return form;
+}
+
+function composeKey(parent, key) {
+    return parent ? parent + '[' + key + ']' : key;
+}
+
+function append(form, key, value) {
+    if (Array.isArray(value)) {
+        return Array.from(value.keys()).forEach((index) => append(form, composeKey(key, index.toString()), value[index]));
+    } else if (value instanceof Date) {
+        return form.append(key, value.toISOString());
+    } else if (value instanceof File) {
+        return form.append(key, value, value.name);
+    } else if (value instanceof Blob) {
+        return form.append(key, value);
+    } else if (typeof value === 'boolean') {
+        return form.append(key, value ? '1' : '0');
+    } else if (typeof value === 'string') {
+        return form.append(key, value);
+    } else if (typeof value === 'number') {
+        return form.append(key, `${value}`);
+    } else if (value === null || value === undefined) {
+        return form.append(key, '');
+    }
+
+    objectToFormData(value, form, key);
 }
