@@ -4,7 +4,6 @@ namespace dee\inertia;
 
 use Yii;
 use yii\web\ErrorHandler as BaseErrorHandler;
-use const YII_ENV_TEST;
 
 /**
  * Description of ErrorHandler

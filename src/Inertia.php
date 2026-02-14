@@ -71,7 +71,6 @@ class Inertia
             'view_file' => '@dee/inertia/views/app.php',
             'encrypt_history' => false,
             'shared' => [],
-            'serializer' => [],
             'register_vite_asset' => true,
             'register_yii_url_asset' => true,
             'vite_port' => '5173',
