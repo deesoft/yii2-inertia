@@ -36,7 +36,7 @@ function deleteModel(model){
 </script>
 <template>
     <v-container fluid>
-        <v-row dense>
+        <v-row density="compact">
             <v-col cols="12">
                 <p>
                     <Link :href="yiiUrl.home" class="text-decoration-none"><v-icon>mdi-home</v-icon></Link> /
@@ -55,18 +55,26 @@ function deleteModel(model){
                         <v-btn density="compact" icon="mdi-delete" @click="deleteModel(model)"></v-btn>
                     </v-toolbar>
                     <v-card-text>
+                        <v-row density="compact">
+                            <v-col  cols="12">
+                                <v-card>
+                                    <v-card-text>
 <?php foreach($viewChunks as $parts): ?>
-                        <v-row>
+                                        <v-row density="compact">
 <?php foreach($parts as $part): ?>
-                            <v-col xl="6" md="6" sm="6" cols="12">
-                                <v-row>
-                                    <v-col cols="4" class="font-bold"><?= $part['label'] ?></v-col>
-                                    <v-col cols="8"> {{model.<?= $part['field'] ?>}} </v-col>
-                                </v-row>
+                                            <v-col xl="6" md="6" sm="6" cols="12">
+                                                <v-row density="compact">
+                                                    <v-col cols="4" class="font-bold"><?= $part['label'] ?></v-col>
+                                                    <v-col cols="8"> {{model.<?= $part['field'] ?>}} </v-col>
+                                                </v-row>
+                                            </v-col>
+<?php endforeach; ?>
+                                        </v-row>
+<?php endforeach; ?>
+                                    </v-card-text>
+                                </v-card>
                             </v-col>
-<?php endforeach; ?>
                         </v-row>
-<?php endforeach; ?>
                     </v-card-text>
                 </v-card>
             </v-col>

@@ -36,7 +36,7 @@ function save() {
 </script>
 <template>
     <v-container fluid>
-        <v-row dense>
+        <v-row density="compact">
             <v-col cols="12">
                 <p>
                     <Link :href="yiiUrl.home" class="text-decoration-none"><v-icon>mdi-home</v-icon></Link> /
@@ -54,21 +54,29 @@ function save() {
                         <v-progress-linear indeterminate v-if="form.processing"></v-progress-linear>
                         <v-divider/>
                         <v-card-text>
+                            <v-row density="compact">
+                                <v-col  cols="12">
+                                    <v-card>
+                                        <v-card-text>
 <?php foreach($inputChunks as $parts): ?>
-                            <v-row>
+                                            <v-row density="compact">
 <?php foreach($parts as $input): ?>
-                                <v-col class="py-1" sm="6" cols="12">
+                                                <v-col  sm="6" cols="12">
 <?php if($input['type'] != 'boolean'): ?>
-                                    <v-text-field type="<?= $input['type'] ?>" name="<?= $input['field'] ?>" v-model="form.<?= $input['field'] ?>" label="<?= $input['label'] ?>"
-                                        variant="outlined" density="compact" :rules="[<?= $input['required'] ? 'required' : 'remote' ?>]"></v-text-field>
+                                                    <v-text-field type="<?= $input['type'] ?>" name="<?= $input['field'] ?>" v-model="form.<?= $input['field'] ?>" label="<?= $input['label'] ?>"
+                                                        variant="outlined" density="compact" :rules="[<?= $input['required'] ? 'required' : 'remote' ?>]"></v-text-field>
 <?php else: ?>
-                                    <v-checkbox name="<?= $input['field'] ?>" v-model="form.<?= $input['field'] ?>" label="<?= $input['label'] ?>"
-                                        variant="outlined" density="compact" :rules="[<?= $input['required'] ? 'required' : 'remote' ?>]"></v-checkbox>
+                                                    <v-checkbox name="<?= $input['field'] ?>" v-model="form.<?= $input['field'] ?>" label="<?= $input['label'] ?>"
+                                                        variant="outlined" density="compact" :rules="[<?= $input['required'] ? 'required' : 'remote' ?>]"></v-checkbox>
 <?php endif; ?>
+                                                </v-col>
+<?php endforeach; ?>
+                                            </v-row>
+<?php endforeach; ?>
+                                        </v-card-text>
+                                    </v-card>
                                 </v-col>
-<?php endforeach; ?>
                             </v-row>
-<?php endforeach; ?>
                         </v-card-text>
                         <v-divider></v-divider>
                         <v-toolbar density="compact">

@@ -53,9 +53,9 @@ defineExpose({ open });
                 </v-toolbar>
                 <v-card-text>
 <?php foreach($inputChunks as $parts): ?>
-                    <v-row>
+                    <v-row density="compact">
 <?php foreach($parts as $input): ?>
-                        <v-col class="py-1" sm="6" cols="12">
+                        <v-col  sm="6" cols="12">
 <?php if($input['type'] != 'boolean'): ?>
                             <v-text-field type="<?= $input['type'] ?>" name="<?= $input['field'] ?>" v-model="form.<?= $input['field'] ?>" label="<?= $input['label'] ?>"
                                 variant="outlined" density="compact" :rules="[<?= $input['required'] ? 'required' : 'remote' ?>]"></v-text-field>

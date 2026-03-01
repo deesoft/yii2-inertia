@@ -30,7 +30,7 @@ function runCommand($cmd, $title)
 
 foreach ($services as $service) {
     list($address, $root) = $service;
-    $cmd = PHP_BINARY . " -S $address -t $root";
+    $cmd = '"' . PHP_BINARY . "\" -S {$address} -t \"{$root}\"";
     runCommand($cmd, "PHP Service");
 }
 runCommand($viteCommand, "Vite Dev Server");

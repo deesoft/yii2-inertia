@@ -45,7 +45,7 @@ function deleteRow(row){
 </script>
 <template>
     <v-container fluid>
-        <v-row dense>
+        <v-row density="compact">
             <v-col cols="12">
                 <p>
                     <Link :href="yiiUrl.home" class="text-decoration-none"><v-icon>mdi-home</v-icon></Link> /

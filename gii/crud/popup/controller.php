@@ -83,11 +83,11 @@ class <?= $controllerClass ?> extends <?= StringHelper::basename($generator->bas
     {
 <?php if (!empty($generator->searchModelClass)): ?>
         $searchModel = new <?= isset($searchModelAlias) ? $searchModelAlias : $searchModelClass ?>();
-        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+        $dataProvider = $searchModel->search($this->request->queryParams);
 <?php else: ?>
         $query = <?= $modelClass ?>::find();
 <?php if($generator->inlineSearch): ?>
-        $request = Yii::$app->getRequest();
+        $request = $this->getRequest();
         <?= implode("\n        ", $searchConditions) ?>
 <?php endif; ?>
         $sortAttrs = [
