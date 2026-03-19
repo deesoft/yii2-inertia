@@ -11,8 +11,8 @@ use yii\helpers\Html;
 use yii\helpers\Json;
 use yii\web\Response;
 use yii\base\Arrayable;
-use yii\base\BaseObject;
 use dee\clientUrl\Helper;
+use yii\base\Component;
 use yii\helpers\ArrayHelper;
 use yii\web\HeaderCollection;
 use yii\data\DataProviderInterface;
@@ -22,10 +22,12 @@ use yii\data\DataProviderInterface;
  * @author Misbahul D Munir <misbahuldmunir@gmail.com>
  * @since 1.0
  */
-class ResponseFactory extends BaseObject implements \JsonSerializable
+class ResponseFactory extends Component implements \JsonSerializable
 {
     const CONTENT_TYPE_JSON = 'application/json; charset=UTF-8';
     const CONTENT_TYPE_HTML = 'text/html';
+    const EVENT_RESOLVE_DATA = 'resolveData';
+    const EVENT_RESOLVED_DATA = 'resolvedData';
     /**
      * @var string the name of the query parameter containing the information about which fields should be returned
      * for a [[Model]] object. If the parameter is not provided or empty, the default set of fields as defined
@@ -115,6 +117,10 @@ class ResponseFactory extends BaseObject implements \JsonSerializable
      * @var array<string, string>
      */
     protected $errors = [];
+
+    protected $fields = [];
+
+    protected $expands = [];
 
     /**
      * {@inheritdoc}
@@ -312,10 +318,17 @@ class ResponseFactory extends BaseObject implements \JsonSerializable
     {
         $request = $this->request;
         $params = array_merge(Inertia::config('shared'), Inertia::getShared(), $this->params);
-        $data = $this->resolveProps($this->component, $params);
+        $event = new ResolveDataEvent([
+            'component' => $this->component,
+            'params' => $params,
+        ]);
+        $this->trigger(self::EVENT_RESOLVE_DATA, $event);
+        $params = $event->params;
+        $component = $event->component;
+        $data = $this->resolveProps($component, $params);
         $session = Yii::$app->session;
         $data = array_merge([
-            'component' => $this->component,
+            'component' => $component,
             'url' => $request->getUrl(),
             'version' => Inertia::getVersion(),
             'encryptHistory' => $this->encryptHistory || Inertia::config('encrypt_history'),
@@ -325,7 +338,14 @@ class ResponseFactory extends BaseObject implements \JsonSerializable
         if (!empty($flash)) {
             $data['flash'] = $flash;
         }
-        return $data;
+
+        $event = new ResolveDataEvent([
+            'component' => $component,
+            'params' => $params,
+            'data' => $data,
+        ]);
+        $this->trigger(self::EVENT_RESOLVED_DATA, $event);        
+        return $event->data;
     }
 
     /**
@@ -437,6 +457,38 @@ class ResponseFactory extends BaseObject implements \JsonSerializable
     }
 
     /**
+     * @param string|string[] $fields
+     * @return static
+     */
+    public function recordFields($fields) 
+    {
+        if(empty($fields)){
+            $this->fields = [];
+        }elseif(is_string($fields)){
+            $this->fields = preg_split('/\s*,\s*/', $fields, -1, PREG_SPLIT_NO_EMPTY);
+        }else{
+            $this->fields = $fields;
+        }
+        return $this;
+    }
+
+    /**
+     * @param string|string[] $fields
+     * @return static
+     */
+    public function recordExpands($fields) 
+    {
+        if(empty($fields)){
+            $this->expands = [];
+        }elseif(is_string($fields)){
+            $this->expands = preg_split('/\s*,\s*/', $fields, -1, PREG_SPLIT_NO_EMPTY);
+        }else{
+            $this->expands = $fields;
+        }
+        return $this;
+    }
+
+    /**
      * @return array the names of the requested fields. The first element is an array
      * representing the list of default fields requested, while the second element is
      * an array of the extra fields requested in addition to the default fields.
@@ -445,13 +497,15 @@ class ResponseFactory extends BaseObject implements \JsonSerializable
      */
     protected function getRequestedFields()
     {
-        $fields = $this->request->get($this->fieldsParam);
-        $expand = $this->request->get($this->expandParam);
-
-        return [
-            is_string($fields) ? preg_split('/\s*,\s*/', $fields, -1, PREG_SPLIT_NO_EMPTY) : [],
-            is_string($expand) ? preg_split('/\s*,\s*/', $expand, -1, PREG_SPLIT_NO_EMPTY) : [],
-        ];
+        $fields = $this->request->get($this->fieldsParam, $this->fields);
+        $expand = $this->request->get($this->expandParam, $this->expands);
+        if (is_string($fields)) {
+            $fields = preg_split('/\s*,\s*/', $fields, -1, PREG_SPLIT_NO_EMPTY);
+        }
+        if (is_string($expand)) {
+            $expand = preg_split('/\s*,\s*/', $expand, -1, PREG_SPLIT_NO_EMPTY);
+        }
+        return [$fields, $expand];
     }
 
     /**

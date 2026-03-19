@@ -9,6 +9,7 @@ echo $form->field($generator, 'controllerID');
 echo $form->field($generator, 'baseControllerClass');
 echo $form->field($generator, 'inlineSearch')->checkbox();
 echo $form->field($generator, 'enableI18N')->checkbox();
+echo $form->field($generator, 'viewItemComponent');
 echo $form->field($generator, 'messageCategory');
 
 $js = <<<JS

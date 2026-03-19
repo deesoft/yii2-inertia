@@ -17,6 +17,7 @@ foreach ($pks as $pk) {
 $urlParams = implode(', ', $urlParams);
 
 $viewChunks = array_chunk($views, 2);
+$viewField = $generator->viewItemComponent;
 ?>
 <script setup>
 import { router } from '@inertiajs/vue3';
@@ -62,11 +63,8 @@ function deleteModel(model){
 <?php foreach($viewChunks as $parts): ?>
                                         <v-row density="compact">
 <?php foreach($parts as $part): ?>
-                                            <v-col xl="6" md="6" sm="6" cols="12">
-                                                <v-row density="compact">
-                                                    <v-col cols="4" class="font-bold"><?= $part['label'] ?></v-col>
-                                                    <v-col cols="8"> {{model.<?= $part['field'] ?>}} </v-col>
-                                                </v-row>
+                                            <v-col sm="6" cols="12">
+                                                <?= Html::tag($viewField, '', ['label' => $part['label'], ':model-value' => "model.{$part['field']}", 'readonly' => true, 'persistent-placeholder' => true]) ?> 
                                             </v-col>
 <?php endforeach; ?>
                                         </v-row>

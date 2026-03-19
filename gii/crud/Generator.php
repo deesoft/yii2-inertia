@@ -34,6 +34,7 @@ class Generator extends \yii\gii\generators\crud\Generator
      * @var bool Using inline search
      */
     public $inlineSearch = true;
+    public $viewItemComponent = 'v-text-field';
     public $clientPath = '@client/pages';
     public $excludeColumns = ['created_at', 'created_by', 'updated_at', 'updated_by', 'is_deleted'];
     public $modelNsSearch = [];
@@ -81,6 +82,7 @@ class Generator extends \yii\gii\generators\crud\Generator
             [['modelClass'], 'validateModelClass'],
             [['enableI18N', 'inlineSearch'], 'boolean'],
             [['messageCategory'], 'validateMessageCategory', 'skipOnEmpty' => false],
+            [['viewItemComponent'], 'safe'],
         ]);
     }
 
@@ -411,7 +413,7 @@ class Generator extends \yii\gii\generators\crud\Generator
                     break;
                 case Schema::TYPE_STRING:
                 case Schema::TYPE_CHAR:
-                    if ($column == 'status' || $column == 'number') {
+                    if ($column == 'status' || $column == 'number' || $column == 'type') {
                         $hashConditions[] = "'{$column}' => \$this->{$column},";
                         $types['safe'][] = $column;
                         break;

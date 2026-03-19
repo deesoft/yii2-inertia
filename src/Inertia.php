@@ -19,6 +19,18 @@ class Inertia
      */
     protected static $responseFactory;
 
+    protected static $defaultConfigs = [
+        'tag' => 'div',
+        'id' => 'app',
+        'view_file' => '@dee/inertia/views/app.php',
+        'encrypt_history' => false,
+        'shared' => [],
+        'register_vite_asset' => true,
+        'register_yii_url_asset' => true,
+        'vite_port' => '5173',
+        'vite_prod' => false,
+        'response_factory' => []
+    ];
     /**
      * @return ResponseFactory
      */
@@ -65,23 +77,24 @@ class Inertia
      */
     public static function config($key, $default = null)
     {
-        $defaultConfigs = [
-            'tag' => 'div',
-            'id' => 'app',
-            'view_file' => '@dee/inertia/views/app.php',
-            'encrypt_history' => false,
-            'shared' => [],
-            'register_vite_asset' => true,
-            'register_yii_url_asset' => true,
-            'vite_port' => '5173',
-            'vite_prod' => false,
-            'response_factory' => []
-        ];
         if (($value = ArrayHelper::getValue(Yii::$app->params, "inertia.$key")) !== null) {
             return $value;
         }
-        $env_key = strcmp($key, 'vite_') === 0 ? strtoupper($key) : 'INERTIA_' . strtoupper($key);
-        return ArrayHelper::getValue($defaultConfigs, $key, $_ENV[$env_key] ?? $default);
+        if($key !== 'shared' && $key !== 'response_factory'){
+            $env_key = strcmp($key, 'vite_') === 0 ? strtoupper($key) : 'INERTIA_' . strtoupper($key);
+            $default = $_ENV[$env_key] ?? $default;
+        }
+        return ArrayHelper::getValue(self::$defaultConfigs, $key, $default);
+    }
+
+    /**
+     * @param string $key
+     * @param mixed $value
+     * @return mixed 
+     */
+    public static function setConfig($key, $value)
+    {
+        self::$defaultConfigs[$key] = $value;
     }
 
     /**
