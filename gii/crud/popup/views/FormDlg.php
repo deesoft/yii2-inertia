@@ -44,7 +44,7 @@ defineExpose({ open });
 </script>
 <template>
     <v-dialog v-model="show" persistent max-width="720">
-        <DForm :errors="form.errors" @submit="save()">
+        <DForm :errors="form.errors" @valid-submit="save()">
             <v-card>
                 <v-toolbar density="compact" :title="(form.$isNew ? 'New ' : 'Edit ') + '<?= $modelName ?>'">
                     <template v-slot:append>

@@ -45,7 +45,7 @@ function save() {
                 </p>          
             </v-col>
             <v-col cols="12">
-                <DForm :errors="form.errors" @submit="save()">
+                <DForm :errors="form.errors" @valid-submit="save()">
                     <v-card>
                         <v-toolbar density="compact">
                             <v-btn density="compact" icon="mdi-arrow-left" :to="yiiUrl('<?= $baseRoute ?>/index')"></v-btn>

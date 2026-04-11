@@ -207,11 +207,12 @@ class Generator extends \yii\gii\generators\crud\Generator
                     'field' => $attribute,
                     'label' => $model->getAttributeLabel($attribute),
                     'sort' => false,
+                    'width' => 120,
                 ];
             }
         } else {
-            $pks = $table->primaryKey;
             foreach ($table->columns as $column) {
+                $width = 60;
                 $attribute = $column->name;
                 $columns[$attribute] = $column->type;
                 if (in_array($attribute, $this->excludeColumns)) {
@@ -246,16 +247,23 @@ class Generator extends \yii\gii\generators\crud\Generator
                         break;
                     case Schema::TYPE_DATE:
                         $type = 'date';
+                        $width = 80;
                         break;
                     case Schema::TYPE_TIME:
                     case Schema::TYPE_DATETIME:
                     case Schema::TYPE_TIMESTAMP:
                         $type = 'datetime-local';
+                        $width = 80;
                         break;
                     case Schema::TYPE_JSON:
                         $skip = true;
                         break;
                     default:
+                        if($column->type == Schema::TYPE_TEXT){
+                            $width = 300;
+                        } else {
+                            $width = $column->size ? max(min($column->size * 6, 300), 80) : 120;
+                        }                        
                         $type = 'text';
                         break;
                 }
@@ -272,6 +280,8 @@ class Generator extends \yii\gii\generators\crud\Generator
                     'field' => $attribute,
                     'label' => $model->getAttributeLabel($attribute),
                     'sort' => $column->type != Schema::TYPE_JSON,
+                    'width' => $width,
+                    'tag' => $type == 'boolean' ? 'v-checkbox' : $this->viewItemComponent,
                 ];
             }
         }

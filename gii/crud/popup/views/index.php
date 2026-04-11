@@ -26,15 +26,15 @@ const props = defineProps({
 });
 const formDlg = useTemplateRef('formDlg');
 const columns = [
-    {field:'no', title:'NO', filter: false},
+    {field:'no', title:'NO', filter: false, width: 60},
 <?php 
 $count = 0;
 foreach($views as $col):
 $count++;
 ?>
-    <?= ($count > 6 ? '// ':'') ?>{field: '<?= $col['field'] ?>', title: '<?= $col['label'] ?>' <?= $col['sort'] ? ", sort: '{$col['field']}'":'' ?>},
+    <?= ($count > 6 ? '// ':'') ?>{field: '<?= $col['field'] ?>', title: '<?= $col['label'] ?>' <?= $col['sort'] ? ", sort: '{$col['field']}'":'' ?>, width: <?= $col['width'] ?>},
 <?php endforeach; ?>
-    {field:'action', title:'Action', filter: false},
+    {field:'action', title:'Action', filter: false, width: 100},
 ];
 
 function deleteRow(row){
@@ -55,25 +55,17 @@ function deleteRow(row){
                 </p>
             </v-col>
             <v-col cols="12">
-                <v-card>
-                    <v-toolbar density="compact">
+                <GridView :data="data" :columns="columns" title="<?= $modelName ?>">
+                    <template #prepend-toolbar>
                         <v-btn density="compact" icon="mdi-reload" @click="router.reload()"></v-btn>
-                        <v-toolbar-title><?= $modelName ?></v-toolbar-title>
-                        <v-spacer></v-spacer>
-                        <v-toolbar-items>
-                            <QuerySearchText density="compact" style="min-width: 250px;"></QuerySearchText>
-                        </v-toolbar-items>
                         <v-btn density="compact" icon="mdi-plus" @click="formDlg.open()"></v-btn>
-                    </v-toolbar>
-                    <v-divider/>
-                    <GridView :data="data" :columns="columns" reload density="compact">
-                        <template #d-no="{line}">{{ line }}</template>
-                        <template #d-action="{row}">
-                            <v-btn density="compact" size="small" icon="mdi-pencil" @click="formDlg.open(row)"></v-btn>
-                            <v-btn density="compact" size="small" icon="mdi-delete" @click="deleteRow(row)"></v-btn>
-                        </template>
-                    </GridView>
-                </v-card>
+                    </template>
+                    <template #d-no="{line}">{{ line }}</template>
+                    <template #d-action="{row}">
+                        <v-btn density="compact" size="small" icon="mdi-pencil" @click="formDlg.open(row)"></v-btn>
+                        <v-btn density="compact" size="small" icon="mdi-delete" @click="deleteRow(row)"></v-btn>
+                    </template>
+                </GridView>
             </v-col>
         </v-row>
         <FormDlg ref="formDlg"></FormDlg>

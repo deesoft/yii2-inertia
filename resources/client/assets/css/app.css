@@ -75,6 +75,21 @@ table th.action{
    max-width: 150px;
 }
 
+.grid-view table{
+   width: max-content;
+   min-width: 100%;
+}
+
+.number-input input{
+   text-align: right;
+}
+.d-view-right-align input{
+   text-align: right;
+}
+.d-view-left-align input{
+   text-align: left;
+}
+
 @keyframes shine {
    to {
      background-position-x: -200%;

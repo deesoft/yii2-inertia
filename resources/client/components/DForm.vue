@@ -2,9 +2,9 @@
 import { watch } from 'vue';
 
 const props = defineProps({
-    errors: Object,
+    errors: Object,    
 });
-const emit = defineEmits(['submit', 'preSubmit']);
+const emit = defineEmits(['submit', 'validSubmit', 'errorSubmit']);
 
 const el = useTemplateRef('el');
 watch(() => props.errors, errors => {
@@ -17,17 +17,23 @@ watch(() => props.errors, errors => {
     }
 }, { deep: true });
 
-function submit(event) {
-    emit('preSubmit', event);
-    event.then(({ valid }) => {
-        if (valid) {
-            emit('submit');
-        }
-    });
+function onSubmit(event) {
+    emit('submit', event);
+    event.then(({ valid, errors }) => valid ? emit('validSubmit') : emit('errorSubmit', errors));
 }
+function submit()
+{
+    el.value.validate().then(({ valid, errors }) => valid ? emit('validSubmit') : emit('errorSubmit', errors));
+}
+defineExpose({
+    submit,
+    reset: () => el.value.reset(),
+    resetValidation: () => el.value.resetValidation(),
+    validate: () => el.value.validate(),
+});
 </script>
 <template>
-    <v-form ref="el" @submit.prevent="submit">
+    <v-form ref="el" @submit.prevent="onSubmit">
         <slot></slot>
     </v-form>
 </template>
