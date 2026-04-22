@@ -203,28 +203,47 @@ class ResponseFactory extends Component implements \JsonSerializable
         return $this;
     }
 
+    
+    protected $deferredProps = [];
+    protected $mergeProps = [];
+    protected $prependProps = [];
+    protected $deepMergeProps = [];
+    protected $matchPropsOn = [];
+    protected $onceProps = [];
+    protected $scrollProps = [];
+    protected $sharedProps = [];
+
     /**
-     *
-     * @param string $component
-     * @param array|mixed $params
-     * @return array
+     * @param string $key
+     * @param string[]|null $only
+     * @param string[]|null $except
+     * @return bool
      */
-    protected function resolveProps($component, $params = [])
+    protected function isAllowsPartial($key, $only, $except)
+    {
+        if($except && in_array($key, $except)){
+            return false;
+        }
+        if(!$only || in_array($key, $only)){
+            return true;
+        }
+        foreach($only as $f){
+            if(strpos($f, "$key.") === 0 || strpos($key, "$f.")){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    protected function resolvePropsRecursive($params, $partials, $prefix = null)
     {
         $request = $this->request;
-        list($isInertia, $partial, $only, $except, $reset, $exceptOnce) = $this->resolvePartial($component);
+        list($isInertia, $partial, $only, $except, $reset, $exceptOnce) = $partials;
 
         $props = [];
-        $deferredProps = [];
-        $mergeProps = [];
-        $prependProps = [];
-        $deepMergeProps = [];
-        $matchPropsOn = [];
-        $onceProps = [];
-        $scrollProps = [];
-
-        foreach ($params as $key => $prop) {
-            $allowPartial = (!$except || !in_array($key, $except)) && (!$only || in_array($key, $only));
+        foreach ($params as $_key => $prop) {
+            $key = $prefix ? "$prefix.$_key" : $_key;
+            $allowPartial = $this->isAllowsPartial($key, $only, $except);
             $isOnce = $prop instanceof Onceable && $prop->shouldResolveOnce() && !$prop->shouldBeRefreshed() && in_array($prop->getKey() ?? $key, $exceptOnce);
             $allow = ($prop instanceof AlwaysProp) ||
                 ($partial && $allowPartial) ||
@@ -236,56 +255,84 @@ class ResponseFactory extends Component implements \JsonSerializable
                     $prop->configureMergeIntent($request);
                 }
                 if ($prop->shouldDeepMerge()) {
-                    $deepMergeProps[] = $key;
+                    $this->deepMergeProps[] = $key;
                 } elseif ($prop->appendsAtRoot()) {
-                    $mergeProps[] = $key;
+                    $this->mergeProps[] = $key;
                 } elseif ($prop->prependsAtRoot()) {
-                    $prependProps[] = $key;
+                    $this->prependProps[] = $key;
                 } elseif (count($prop->appendsAtPaths())) {
                     foreach ($prop->appendsAtPaths() as $path) {
-                        $mergeProps[] = "$key.$path";
+                        $this->mergeProps[] = "$key.$path";
                     }
                 } elseif (count($prop->prependsAtPaths())) {
                     foreach ($prop->prependsAtPaths() as $path) {
-                        $prependProps[] = "$key.$path";
+                        $this->prependProps[] = "$key.$path";
                     }
                 }
 
                 if (count($prop->matchesOn())) {
                     foreach ($prop->matchesOn() as $path) {
-                        $matchPropsOn[] = "$key.$path";
+                        $this->matchPropsOn[] = "$key.$path";
                     }
                 }
             }
 
             // DeferProp
             if ($partial && $prop instanceof DeferProp && !$isOnce) {
-                $deferredProps[$prop->group()][] = $key;
+                $this->deferredProps[$prop->group()][] = $key;
             }
 
             // Onceable
             if ($prop instanceof Onceable && $prop->shouldResolveOnce() && $allowPartial) {
-                $onceProps[$prop->getKey() ?? $key] = [
+                $this->onceProps[$prop->getKey() ?? $key] = [
                     'prop' => $key,
                     'expireAt' => $prop->expiresAt()
                 ];
             }
 
             if ($allow) {
-                if ($prop instanceof Closure || is_callable($prop) || $prop instanceof BaseProp) {
-                    $props[$key] = call_user_func($prop);
-                } else {
-                    $props[$key] = $prop;
-                }
-                // ScrollProp
-                if ($prop instanceof ScrollProp) {
-                    $scrollProps[$key] = $prop->getMeta();
-                    if ($scrollProps[$key] && in_array($key, $reset)) {
-                        $scrollProps[$key]['reset'] = true;
+                if ($prop instanceof BaseProp) {
+                    $props[$_key] = call_user_func($prop);
+                    // ScrollProp
+                    if ($prop instanceof ScrollProp) {
+                        $this->scrollProps[$key] = $prop->getMeta();
+                        if ($this->scrollProps[$key] && in_array($key, $reset)) {
+                            $this->scrollProps[$key]['reset'] = true;
+                        }
                     }
+                } elseif($prop instanceof \Closure || is_callable($prop)){
+                    $props[$_key] = call_user_func($prop);
+                    if(is_array($props[$_key])){
+                        $props[$_key] = $this->resolvePropsRecursive($props[$_key], $partials, $_key);
+                    }
+                } elseif(is_array($prop)){
+                    $props[$_key] = $this->resolvePropsRecursive($prop, $partials, $_key);
+                } else {
+                    $props[$_key] = $prop;
                 }
             }
+            return $props;
         }
+    }
+
+    /**
+     *
+     * @param string $component
+     * @param array|mixed $params
+     * @return array
+     */
+    protected function resolveProps($component, $params = [])
+    {
+        $request = $this->request;
+        $this->deferredProps = [];
+        $this->mergeProps = [];
+        $this->prependProps = [];
+        $this->deepMergeProps = [];
+        $this->matchPropsOn = [];
+        $this->onceProps = [];
+        $this->scrollProps = [];
+
+        $props = $this->resolvePropsRecursive($params, $this->resolvePartial($component));
 
         $props = $this->serialize($props);
         if ($this->errors) {
@@ -299,16 +346,14 @@ class ResponseFactory extends Component implements \JsonSerializable
 
         return array_filter([
             'props' => $props,
-            'deferredProps' => $deferredProps,
-            'mergeProps' => array_unique($mergeProps),
-            'prependProps' => array_unique($prependProps),
-            'deepMergeProps' => $deepMergeProps,
-            'matchPropsOn' => $matchPropsOn,
-            'onceProps' => $onceProps,
-            'scrollProps' => $scrollProps,
-        ], function ($val) {
-            return !empty($val);
-        });
+            'deferredProps' => $this->deferredProps,
+            'mergeProps' => array_unique($this->mergeProps),
+            'prependProps' => array_unique($this->prependProps),
+            'deepMergeProps' => $this->deepMergeProps,
+            'matchPropsOn' => $this->matchPropsOn,
+            'onceProps' => $this->onceProps,
+            'scrollProps' => $this->scrollProps,
+        ], fn ($val) => !empty($val));
     }
 
     /**
@@ -317,7 +362,17 @@ class ResponseFactory extends Component implements \JsonSerializable
     public function data()
     {
         $request = $this->request;
-        $params = array_merge(Inertia::config('shared'), Inertia::getShared(), $this->params);
+        $this->sharedProps = [];
+        
+        $shared = Inertia::getShared();
+        foreach(array_keys($shared) as $key){
+            if(($p = strpos($key, '.')) !== false){
+                $this->sharedProps[] = substr($key, 0, $p);
+            } else {
+                $this->sharedProps[] = $key;
+            }
+        }
+        $params = array_merge($shared, $this->params);
         $event = new ResolveDataEvent([
             'component' => $this->component,
             'params' => $params,
@@ -364,7 +419,8 @@ class ResponseFactory extends Component implements \JsonSerializable
     {
         $tag = Inertia::config('tag');
         $id = Inertia::config('id');
-        $content = Html::tag($tag, '', ['id' => $id, 'data' => ['page' => $data]]);
+        $script = Html::script(Json::encode($data), ['type' => 'application/json', 'data-page' => $id]);
+        $content = Html::tag($tag, '', ['id' => $id]);
 
         $view = Yii::$app->view;
         if (Inertia::config('register_yii_url_asset')) {
@@ -375,7 +431,7 @@ class ResponseFactory extends Component implements \JsonSerializable
         }
 
         $viewFile = Inertia::config('view_file');
-        return $view->render($viewFile, ['content' => $content]);
+        return $view->render($viewFile, ['content' => $script . $content]);
     }
 
     /**

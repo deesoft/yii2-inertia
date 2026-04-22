@@ -1,5 +1,4 @@
 import { computed, reactive } from "vue";
-import axios from 'axios';
 
 export const required = (value) => (value !== null && value !== '') || 'Field is required';
 export function minLength(min) {
@@ -30,11 +29,10 @@ export function useVForm(keys) {
         }
     });
     const primaryKeys = reactive(_primaryKeys);
-    const model = reactive({
+    const model = useHttp({
         ..._model,
         $isNew: computed(() => pks.length === 0 || pks.some(key => primaryKeys[key] === null || primaryKeys[key] === '')),
         $keys: computed(() => primaryKeys),
-        errors: null,
         $reset(row) {
             Object.entries(stateKeys).forEach(([key, val]) => {
                 model[key] = row ? row[key] : null;
@@ -42,85 +40,7 @@ export function useVForm(keys) {
                     primaryKeys[key] = row ? row[key] : null;
                 }
             });
-        },
-        async $submit(url) {
-            const post = {};
-            Object.entries(stateKeys).forEach(([key, val]) => {
-                post[key] = model[key];
-            });
-            const data = hasFiles(post) ? objectToFormData(post) : post;
-            return axios.post(url, data).then(r => {
-                if (model.errors) {
-                    model.errors = null;
-                }
-                return r;
-            }).catch(error => {
-                if (error.response.status == 422) {
-                    model.errors = error.response.data;
-                }
-                throw error;
-            });
         }
     });
     return model;
-}
-
-/**
- * 
- * @param {any} data 
- * @returns {Boolean}
- */
-function hasFiles(data) {
-    return (
-        data instanceof File ||
-        data instanceof Blob ||
-        (data instanceof FileList && data.length > 0) ||
-        (data instanceof FormData && Array.from(data.values()).some((value) => hasFiles(value))) ||
-        (typeof data === 'object' && data !== null && Object.values(data).some((value) => hasFiles(value)))
-    );
-}
-
-/**
- * 
- * @param {Object} source 
- * @param {FormData|null} form 
- * @param {String|null} parentKey 
- * @returns {FormData}
- */
-function objectToFormData(source, form, parentKey) {
-    source = source || {};
-    form = form || new FormData();
-    for (const key in source) {
-        if (Object.prototype.hasOwnProperty.call(source, key)) {
-            append(form, composeKey(parentKey, key), source[key]);
-        }
-    }
-
-    return form;
-}
-
-function composeKey(parent, key) {
-    return parent ? parent + '[' + key + ']' : key;
-}
-
-function append(form, key, value) {
-    if (Array.isArray(value)) {
-        return Array.from(value.keys()).forEach((index) => append(form, composeKey(key, index.toString()), value[index]));
-    } else if (value instanceof Date) {
-        return form.append(key, value.toISOString());
-    } else if (value instanceof File) {
-        return form.append(key, value, value.name);
-    } else if (value instanceof Blob) {
-        return form.append(key, value);
-    } else if (typeof value === 'boolean') {
-        return form.append(key, value ? '1' : '0');
-    } else if (typeof value === 'string') {
-        return form.append(key, value);
-    } else if (typeof value === 'number') {
-        return form.append(key, `${value}`);
-    } else if (value === null || value === undefined) {
-        return form.append(key, '');
-    }
-
-    objectToFormData(value, form, key);
 }

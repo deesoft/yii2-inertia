@@ -1,4 +1,3 @@
-import { stringify } from "qs";
 import { computed, ref, onMounted, onUnmounted } from "vue";
 
 const STORAGE_KEY = '__theme';
@@ -13,10 +12,6 @@ export const darkMode = computed({
         localStorage.setItem(STORAGE_KEY, theme.value);
     }
 });
-
-if (typeof window.stringify === 'undefined') {
-    window.stringify = stringify;
-}
 
 class Bus {
     constructor() {
@@ -69,4 +64,8 @@ export function confirm(message){
             reject(false);
         }
     });
+}
+
+export function toast(message, color = 'success') {
+    $bus.emit('toast', { message, color });
 }

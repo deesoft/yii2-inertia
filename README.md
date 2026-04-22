@@ -93,23 +93,24 @@ Once the extension is installed, simply use it in your controller  :
         ]);        
     }
 
-// defered prop
+// deferred prop
         return Inertia::render('user/index', [
-                'data' => Inertia::defer(function(){
-                    return $dataProvider;
-                }),
+                'data' => Inertia::defer(fn() => $dataProvider),
         ]);
 // other prop
         return Inertia::render('user/index', [
                 'data' => Inertia::scroll(User::find()->where(['active' => true]))->merge(),
-                'warehouses' => Inertia::once(function(){
-                    return Warehouse::find()->all();
-                }),
+                'warehouses' => Inertia::once(fn() => Warehouse::find()->all()),
                 'prop1' => Inertia::optional(fn() => Branch::find()->all()),
                 'prop2' => Inertia::merge(fn() => Branch::find()->all())->prepend(),
                 'prop3' => function(){
                     return Branch::find()->all();
                 }
+        ]);
+
+// shared props
+        Inertia::shared([
+            'user' => fn() => Yii::$app->user->identity,
         ]);
 ```
 

@@ -14,7 +14,6 @@ $inputChunks = array_chunk($inputs, 2);
 <script setup>
 import { router } from "@inertiajs/vue3";
 import { ref } from 'vue';
-import { $bus } from '@/composables/global';
 import { useVForm, required, remote } from "@/composables/form";
 const { yiiUrl } = window;
 
@@ -32,11 +31,11 @@ function open(row){
 
 function save(){
     const url = form.$isNew ? yiiUrl('<?= $baseRoute ?>/create') : yiiUrl('<?= $baseRoute ?>/update', form.$keys);
-    form.$submit(url).then(() => {
+    form.post(url,{
+        onHttpException: (res) => toast(res.statusText, 'error')
+    }).then(() => {
         show.value = false;
         router.reload();
-    }).catch(error => {
-        $bus.emit('toast', {color: 'error', message: error.response.statusText});
     });   
 }
 

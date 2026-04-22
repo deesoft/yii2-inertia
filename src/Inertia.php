@@ -63,11 +63,15 @@ class Inertia
     }
 
     /**
+     * @param string|null $key
      * @return mixed $value
      */
-    public static function getShared()
+    public static function getShared($key = null)
     {
-        return static::$shared;
+        if($key){
+            return ArrayHelper::getValue(array_merge(static::config('shared'), static::$shared), $key);
+        }
+        return array_merge(static::config('shared'), static::$shared);
     }
 
     /**

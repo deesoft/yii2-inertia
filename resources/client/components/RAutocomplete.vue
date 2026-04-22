@@ -1,7 +1,7 @@
 <script setup>
 import debounce from "debounce";
 import { reactive, watch } from "vue";
-import axios from 'axios';
+const http = useHttp();
 const { yiiUrl } = window;
 
 const props = defineProps({
@@ -26,8 +26,8 @@ watch(model, (val) => {
     if (val && (!modelRaw.value || modelRaw.value[props.itemValue] != val)) {
         const route = props.itemRoute || props.route;
         const params = {...((props.itemRoute ? props.itemParams : props.params) || {}), [props.itemValue]: val};
-        axios.get(yiiUrl(route, params)).then(res => {
-            modelRaw.value = Array.isArray(res.data) ? res.data[0] : res.data;
+        http.get(yiiUrl(route, params)).then(res => {
+            modelRaw.value = Array.isArray(res) ? res[0] : res;
         });
     }
 });
@@ -41,8 +41,8 @@ function doSearch(value) {
     return new Promise((resolve, reject) => {
         if (!state.loading) {
             state.loading = true;
-            axios.get(yiiUrl(props.route, {...(props.params || {}), [props.searchParam]: value})).then(res => {
-                state.items = res.data;
+            http.get(yiiUrl(props.route, {...(props.params || {}), [props.searchParam]: value})).then(res => {
+                state.items = res;
                 state.loading = false;
                 resolve(true);
             }).catch((res) => {

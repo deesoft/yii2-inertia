@@ -2,7 +2,7 @@ const user = window.user || {};
 const { yiiUrl } = window;
 export const auth = reactive({
     ...user,
-    isLoged: computed(() => !!user.id),
+    isLogged: computed(() => !!user.id),
     avatarLink: computed(() => {
         if (auth.avatar) {
             const regex = /^[a-z0-9]{1,16}$/;

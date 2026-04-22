@@ -39,7 +39,7 @@ $count++;
 
 function deleteRow(row){
     confirm('Are you sure you want to delete this item?').then(() => {
-        axios.post(yiiUrl.post('<?= $baseRoute ?>/delete', {<?= $urlParams ?>})).then(()=>{
+        useHttp().post(yiiUrl.post('<?= $baseRoute ?>/delete', {<?= $urlParams ?>})).then(()=>{
             router.reload();
         });
     });
