@@ -4,18 +4,15 @@ namespace dee\inertia;
 
 use Yii;
 use Closure;
-use yii\base\Model;
 use yii\helpers\Url;
 use yii\web\Request;
 use yii\helpers\Html;
 use yii\helpers\Json;
 use yii\web\Response;
-use yii\base\Arrayable;
 use dee\clientUrl\Helper;
 use yii\base\Component;
 use yii\helpers\ArrayHelper;
 use yii\web\HeaderCollection;
-use yii\data\DataProviderInterface;
 
 /**
  * 
@@ -28,57 +25,7 @@ class ResponseFactory extends Component implements \JsonSerializable
     const CONTENT_TYPE_HTML = 'text/html';
     const EVENT_RESOLVE_DATA = 'resolveData';
     const EVENT_RESOLVED_DATA = 'resolvedData';
-    /**
-     * @var string the name of the query parameter containing the information about which fields should be returned
-     * for a [[Model]] object. If the parameter is not provided or empty, the default set of fields as defined
-     * by [[Model::fields()]] will be returned.
-     */
-    public $fieldsParam = 'fields';
-    /**
-     * @var string the name of the query parameter containing the information about which fields should be returned
-     * in addition to those listed in [[fieldsParam]] for a resource object.
-     */
-    public $expandParam = 'expand';
-    /**
-     * @var string|null the name of the envelope (e.g. `items`) for returning the resource objects in a collection.
-     * This is used when serving a resource collection. When this is set and pagination is enabled, the serializer
-     * will return a collection in the following format:
-     *
-     * ```php
-     * [
-     *     'items' => [...],  // assuming collectionEnvelope is "items"
-     *     'links' => [  // pagination links
-     *         {'label' => 'First', 'href' => ...},
-     *         {...},
-     *     ],
-     *     'meta' => {  // meta information as returned by Pagination::toArray()
-     *         'totalCount' => 100,
-     *         'pageCount' => 5,
-     *         'currentPage' => 1,
-     *         'perPage' => 20,
-     *     },
-     * ]
-     * ```
-     *
-     * If this property is not set, the resource arrays will be directly returned without using envelope.
-     * The pagination information as shown in `_links` and `_meta` can be accessed from the response HTTP headers.
-     */
-    public $collectionEnvelope = 'items';
-    /**
-     * @var string the name of the envelope (e.g. `_links`) for returning the links objects.
-     * It takes effect only, if `collectionEnvelope` is set.
-     */
-    public $linksEnvelope = 'links';
-    /**
-     * @var string the name of the envelope (e.g. `_meta`) for returning the pagination object.
-     * It takes effect only, if `collectionEnvelope` is set.
-     */
-    public $metaEnvelope = 'meta';
-
-    /**
-     * @var int
-     */
-    public $maxPageButton = 5;
+    
     /**
      * @var Request|null the current request. If not set, the `request` application component will be used.
      */
@@ -87,14 +34,6 @@ class ResponseFactory extends Component implements \JsonSerializable
      * @var Response|null the response to be sent. If not set, the `response` application component will be used.
      */
     public $response;
-    /**
-     * @var bool whether to preserve array keys when serializing collection data.
-     * Set this to `true` to allow serialization of a collection as a JSON object where array keys are
-     * used to index the model objects. The default is to serialize all collections as array, regardless
-     * of how the array is indexed.
-     * @see serializeDataProvider()
-     */
-    public $preserveKeys = false;
     /**
      * @var string
      */
@@ -112,15 +51,6 @@ class ResponseFactory extends Component implements \JsonSerializable
      * @var bool
      */
     protected $encryptHistory = false;
-
-    /**
-     * @var array<string, string>
-     */
-    protected $errors = [];
-
-    protected $fields = [];
-
-    protected $expands = [];
 
     /**
      * {@inheritdoc}
@@ -334,12 +264,12 @@ class ResponseFactory extends Component implements \JsonSerializable
 
         $props = $this->resolvePropsRecursive($params, $this->resolvePartial($component));
 
-        $props = $this->serialize($props);
-        if ($this->errors) {
+        $props = Serializer::serialize($props, Inertia::config('serializer'));
+        if($errors = ArrayHelper::remove($props, 'errors')){
             if ($request->headers->has(Header::ERROR_BAG)) {
-                $props['errors'][$request->headers->get(Header::ERROR_BAG)] = $this->errors;
+                $props['errors'] = [$request->headers->get(Header::ERROR_BAG) => $errors];
             } else {
-                $props['errors'] = $this->errors;
+                $props['errors'] = $errors;
             }
         }
         $props['$r'] = [Yii::$app->controller->route, $request->getQueryParams() ?: (object) []];
@@ -491,177 +421,5 @@ class ResponseFactory extends Component implements \JsonSerializable
     {
         $this->location = $url ? Url::to($url) : null;
         return $this;
-    }
-
-    protected function serialize($data)
-    {
-        if ($data instanceof Arrayable) {
-            return $this->serializeModel($data);
-        } elseif ($data instanceof \JsonSerializable) {
-            return $data->jsonSerialize();
-        } elseif ($data instanceof DataProviderInterface) {
-            return $this->serializeDataProvider($data);
-        } elseif (is_array($data)) {
-            $serializedArray = [];
-            foreach ($data as $key => $value) {
-                $serializedArray[$key] = $this->serialize($value);
-            }
-            return $serializedArray;
-        }
-
-        return $data;
-    }
-
-    /**
-     * @param string|string[] $fields
-     * @return static
-     */
-    public function recordFields($fields) 
-    {
-        if(empty($fields)){
-            $this->fields = [];
-        }elseif(is_string($fields)){
-            $this->fields = preg_split('/\s*,\s*/', $fields, -1, PREG_SPLIT_NO_EMPTY);
-        }else{
-            $this->fields = $fields;
-        }
-        return $this;
-    }
-
-    /**
-     * @param string|string[] $fields
-     * @return static
-     */
-    public function recordExpands($fields) 
-    {
-        if(empty($fields)){
-            $this->expands = [];
-        }elseif(is_string($fields)){
-            $this->expands = preg_split('/\s*,\s*/', $fields, -1, PREG_SPLIT_NO_EMPTY);
-        }else{
-            $this->expands = $fields;
-        }
-        return $this;
-    }
-
-    /**
-     * @return array the names of the requested fields. The first element is an array
-     * representing the list of default fields requested, while the second element is
-     * an array of the extra fields requested in addition to the default fields.
-     * @see Model::fields()
-     * @see Model::extraFields()
-     */
-    protected function getRequestedFields()
-    {
-        $fields = $this->request->get($this->fieldsParam, $this->fields);
-        $expand = $this->request->get($this->expandParam, $this->expands);
-        if (is_string($fields)) {
-            $fields = preg_split('/\s*,\s*/', $fields, -1, PREG_SPLIT_NO_EMPTY);
-        }
-        if (is_string($expand)) {
-            $expand = preg_split('/\s*,\s*/', $expand, -1, PREG_SPLIT_NO_EMPTY);
-        }
-        return [$fields, $expand];
-    }
-
-    /**
-     * Serializes a data provider.
-     * @param DataProviderInterface $dataProvider
-     * @return array the array representation of the data provider.
-     */
-    protected function serializeDataProvider($dataProvider)
-    {
-        if ($this->preserveKeys) {
-            $models = $dataProvider->getModels();
-        } else {
-            $models = array_values($dataProvider->getModels());
-        }
-        $models = $this->serializeModels($models);
-
-        $result = [
-            $this->collectionEnvelope => $models,
-        ];
-        if (($pagination = $dataProvider->getPagination()) !== false) {
-            return array_merge($result, $this->serializePagination($pagination));
-        }
-
-        return $result;
-    }
-
-    /**
-     * Serializes a pagination into an array.
-     * @param Pagination $pagination
-     * @return array the array representation of the pagination
-     */
-    protected function serializePagination($pagination)
-    {
-        $currentPage = $pagination->getPage();
-        $pageCount = $pagination->getPageCount();
-        $result = [
-            $this->metaEnvelope => [
-                'totalCount' => $pagination->totalCount,
-                'pageCount' => $pageCount,
-                'currentPage' => $currentPage + 1,
-                'perPage' => $pagination->getPageSize(),
-            ],
-        ];
-        if ($this->linksEnvelope) {
-            $maxPageButton = $this->maxPageButton;
-            $links = [];
-            if ($pageCount > 0) {
-                $links[] = ['label' => 'first', 'href' => $pagination->createUrl(0, null, true), 'active' => $currentPage == 0];
-                if ($currentPage > 0) {
-                    $links[] = ['label' => 'prev', 'href' => $pagination->createUrl($currentPage - 1, null, true)];
-                }
-                $beginPage = max(0, $currentPage - (int) ($maxPageButton / 2));
-                if (($endPage = $beginPage + $maxPageButton - 1) >= $pageCount) {
-                    $endPage = $pageCount - 1;
-                    $beginPage = max(0, $endPage - $maxPageButton + 1);
-                }
-                for ($i = $beginPage; $i <= $endPage; $i++) {
-                    $links[] = ['label' => $i + 1, 'href' => $pagination->createUrl($i, null, true), 'active' => $currentPage == $i];
-                }
-                if ($currentPage < $pageCount - 1) {
-                    $links[] = ['label' => 'next', 'href' => $pagination->createUrl($currentPage + 1, null, true)];
-                }
-                $links[] = ['label' => 'last', 'href' => $pagination->createUrl($pageCount - 1, null, true), 'active' => $currentPage == $pageCount - 1];
-            }
-            $result[$this->linksEnvelope] = $links;
-        }
-        return $result;
-    }
-
-    /**
-     * Serializes a model object.
-     * @param Arrayable $model
-     * @return array the array representation of the model
-     */
-    protected function serializeModel($model)
-    {
-        if ($model instanceof Model && $model->hasErrors()) {
-            foreach ($model->firstErrors as $name => $message) {
-                $this->errors[$name] = $message;
-            }
-        }
-        list($fields, $expand) = $this->getRequestedFields();
-        return $model->toArray($fields, $expand);
-    }
-
-    /**
-     * Serializes a set of models.
-     * @param array $models
-     * @return array the array representation of the models
-     */
-    protected function serializeModels(array $models)
-    {
-        foreach ($models as $i => $model) {
-            if ($model instanceof Arrayable) {
-                $models[$i] = $this->serializeModel($model);
-            } elseif (is_array($model)) {
-                $models[$i] = ArrayHelper::toArray($model);
-            }
-        }
-
-        return $models;
     }
 }

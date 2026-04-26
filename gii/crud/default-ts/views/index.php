@@ -11,22 +11,21 @@ $class = $generator->modelClass;
 $pks = $class::primaryKey();
 $urlParams = [];
 foreach ($pks as $pk) {
-    $urlParams[] = "$pk:row.$pk";
+    $urlParams[] = "$pk: row.$pk";
 }
 $urlParams = implode(', ', $urlParams);
 ?>
-<script setup>
+<script setup lang="ts">
 import { router } from "@inertiajs/vue3";
-import {confirm} from "@/composables/global";
-import FormDlg from './FormDlg.vue';
-const {yiiUrl} = window;
+import { confirm } from "@/composables/global";
+import type { TModel } from "./type";
+const { yiiUrl } = window;
 
-const props = defineProps({
-    data: Object,    
-});
-const formDlg = useTemplateRef('formDlg');
+const props = defineProps<{
+    data: TDataProvider<TModel>,
+}>();
 const columns = [
-    {field:'no', title:'NO', filter: false, width: 60},
+    {field: 'no', title: 'NO', filter: false, width: 60},
 <?php 
 $count = 0;
 foreach($views as $col):
@@ -34,10 +33,10 @@ $count++;
 ?>
     <?= ($count > 6 ? '// ':'') ?>{field: '<?= $col['field'] ?>', title: '<?= $col['label'] ?>' <?= $col['sort'] ? ", sort: '{$col['field']}'":'' ?>, filter: true, width: <?= $col['width'] ?>},
 <?php endforeach; ?>
-    {field:'action', title:'Action', filter: false, width: 100},
+    {field: 'action', title: 'Action', filter: false, width: 100},
 ];
 
-function deleteRow(row){
+function deleteRow(row: TModel){
     confirm('Are you sure you want to delete this item?').then(() => {
         useHttp().post(yiiUrl.post('<?= $baseRoute ?>/delete', {<?= $urlParams ?>})).then(()=>{
             router.reload();
@@ -58,16 +57,16 @@ function deleteRow(row){
                 <GridView :data="data" :columns="columns" title="<?= $modelName ?>">
                     <template #prepend-toolbar>
                         <v-btn density="compact" icon="mdi-reload" @click="router.reload()"></v-btn>
-                        <v-btn density="compact" icon="mdi-plus" @click="formDlg.open()"></v-btn>
+                        <v-btn density="compact" icon="mdi-plus" :to="yiiUrl('<?= $baseRoute ?>/create')"></v-btn>
                     </template>
                     <template #d-no="{line}">{{ line }}</template>
                     <template #d-action="{row}">
-                        <v-btn density="compact" size="small" icon="mdi-pencil" @click="formDlg.open(row)"></v-btn>
+                        <v-btn density="compact" size="small" icon="mdi-eye" :to="yiiUrl('<?= $baseRoute ?>/view', {<?= $urlParams ?>})"></v-btn>
+                        <v-btn density="compact" size="small" icon="mdi-pencil" :to="yiiUrl('<?= $baseRoute ?>/update', {<?= $urlParams ?>})"></v-btn>
                         <v-btn density="compact" size="small" icon="mdi-delete" @click="deleteRow(row)"></v-btn>
                     </template>
                 </GridView>
             </v-col>
         </v-row>
-        <FormDlg ref="formDlg"></FormDlg>
     </v-container>
 </template>

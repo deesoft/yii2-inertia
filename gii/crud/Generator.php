@@ -45,7 +45,10 @@ class Generator extends \yii\gii\generators\crud\Generator
      */
     public function init()
     {
+        $this->templates['default'] = __DIR__ . '/default';
+        $this->templates['default-ts'] = __DIR__ . '/default-ts';
         $this->templates['popup'] = __DIR__ . '/popup';
+        $this->templates['popup-ts'] = __DIR__ . '/popup-ts';
         parent::init();
     }
 
@@ -150,7 +153,7 @@ class Generator extends \yii\gii\generators\crud\Generator
     public function generate()
     {
         $controllerFile = Yii::getAlias('@' . str_replace('\\', '/', ltrim($this->getControllerClass(), '\\')) . '.php');
-        list($sortAttrs, $inputs, $forms, $views) = $this->generateDefinition();
+        list($sortAttrs, $inputs, $forms, $views, $modelType) = $this->generateDefinition();
         $files = [
             new CodeFile($controllerFile, $this->render('controller.php', [
                     'sortAttrs' => $sortAttrs,
@@ -167,13 +170,20 @@ class Generator extends \yii\gii\generators\crud\Generator
         $templatePath = $this->getTemplatePath() . '/views';
         $modelName = Inflector::camel2words(StringHelper::basename($this->modelClass));
         foreach (scandir($templatePath) as $file) {
-            $vueFile = str_replace('.php', '.vue', $file);
+            if(!is_file($templatePath . '/' . $file) || pathinfo($file, PATHINFO_EXTENSION) !== 'php'){
+                continue;
+            }
+            $outputFile = substr($file, 0, -4);
+            if(strpos($outputFile, '.') === false){
+                $outputFile = $outputFile . '.vue';
+            }
             if (is_file($templatePath . '/' . $file) && pathinfo($file, PATHINFO_EXTENSION) === 'php') {
-                $files[] = new CodeFile("$path/$vueFile", $this->render("views/$file", [
+                $files[] = new CodeFile("$path/$outputFile", $this->render("views/$file", [
                         'inputs' => $inputs,
                         'forms' => $forms,
                         'modelName' => $modelName,
                         'views' => $views,
+                        'modelType' => $modelType,
                 ]));
             }
         }
@@ -187,6 +197,7 @@ class Generator extends \yii\gii\generators\crud\Generator
         $inputs = [];
         $views = [];
         $forms = [];
+        $modelType = [];
         $class = $this->modelClass;
         /** @var \yii\db\BaseActiveRecord $model  */
         $model = new $class();
@@ -209,6 +220,7 @@ class Generator extends \yii\gii\generators\crud\Generator
                     'sort' => false,
                     'width' => 120,
                 ];
+                $modelType[$attribute] = 'unknown';
             }
         } else {
             foreach ($table->columns as $column) {
@@ -235,28 +247,34 @@ class Generator extends \yii\gii\generators\crud\Generator
                     case Schema::TYPE_BIGINT:
                         $step = 1;
                         $type = 'number';
+                        $modelType[$attribute] = 'number';
                         break;
                     case Schema::TYPE_FLOAT:
                     case Schema::TYPE_DOUBLE:
                     case Schema::TYPE_DECIMAL:
                     case Schema::TYPE_MONEY:
                         $type = 'number';
+                        $modelType[$attribute] = 'number';
                         break;
                     case Schema::TYPE_BOOLEAN:
                         $type = 'boolean';
+                        $modelType[$attribute] = 'boolean';
                         break;
                     case Schema::TYPE_DATE:
                         $type = 'date';
                         $width = 80;
+                        $modelType[$attribute] = 'string';
                         break;
                     case Schema::TYPE_TIME:
                     case Schema::TYPE_DATETIME:
                     case Schema::TYPE_TIMESTAMP:
                         $type = 'datetime-local';
                         $width = 80;
+                        $modelType[$attribute] = 'string';
                         break;
                     case Schema::TYPE_JSON:
                         $skip = true;
+                        $modelType[$attribute] = 'any';
                         break;
                     default:
                         if($column->type == Schema::TYPE_TEXT){
@@ -265,6 +283,7 @@ class Generator extends \yii\gii\generators\crud\Generator
                             $width = $column->size ? max(min($column->size * 6, 300), 80) : 120;
                         }                        
                         $type = 'text';
+                        $modelType[$attribute] = 'string';
                         break;
                 }
                 if (!$skip) {
@@ -296,7 +315,7 @@ class Generator extends \yii\gii\generators\crud\Generator
             }
         }
 
-        return [$sortAttrs, $inputs, $forms, $views];
+        return [$sortAttrs, $inputs, $forms, $views, $modelType];
     }
 
     /**

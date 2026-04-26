@@ -15,15 +15,16 @@ foreach ($pks as $pk) {
 }
 $urlParams = implode(', ', $urlParams);
 ?>
-<script setup>
+<script setup lang="ts">
 import { router } from "@inertiajs/vue3";
 import {confirm} from "@/composables/global";
+import type { TModel } from "./type";
 import FormDlg from './FormDlg.vue';
 const {yiiUrl} = window;
 
-const props = defineProps({
-    data: Object,    
-});
+const props = defineProps<{
+    data: TDataProvider<TModel>,
+}>();
 const formDlg = useTemplateRef('formDlg');
 const columns = [
     {field:'no', title:'NO', filter: false, width: 60},

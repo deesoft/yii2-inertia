@@ -18,16 +18,17 @@ $urlParams = implode(', ', $urlParams);
 
 $viewChunks = array_chunk($views, 2);
 ?>
-<script setup>
+<script setup lang="ts">
 import { router } from '@inertiajs/vue3';
 import { confirm } from "@/composables/global";
+import type { TModel } from "./type";
 const { yiiUrl } = window;
 
-const props = defineProps({
-    model: Object,
-});
+const props = defineProps<{
+    model: TModel,
+}>();
 
-function deleteModel(model){
+function deleteModel(model: TModel){
     confirm('Are you sure you want to delete this item?').then(() => {
         useHttp().post(yiiUrl.post('<?= $baseRoute ?>/delete', {<?= $urlParams ?>})).then(()=>{
             router.visit(yiiUrl('<?= $baseRoute ?>/index'));

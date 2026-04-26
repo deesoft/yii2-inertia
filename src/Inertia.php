@@ -29,7 +29,8 @@ class Inertia
         'register_yii_url_asset' => true,
         'vite_port' => '5173',
         'vite_prod' => false,
-        'response_factory' => []
+        'serializer' => [],
+        'response_factory' => [],
     ];
     /**
      * @return ResponseFactory
@@ -84,7 +85,8 @@ class Inertia
         if (($value = ArrayHelper::getValue(Yii::$app->params, "inertia.$key")) !== null) {
             return $value;
         }
-        if($key !== 'shared' && $key !== 'response_factory'){
+        $fields = ['shared', 'response_factory', 'serializer'];
+        if(!in_array($key, $fields)){
             $env_key = strcmp($key, 'vite_') === 0 ? strtoupper($key) : 'INERTIA_' . strtoupper($key);
             $default = $_ENV[$env_key] ?? $default;
         }

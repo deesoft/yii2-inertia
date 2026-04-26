@@ -30,7 +30,7 @@ $count = 0;
 foreach($views as $col):
 $count++;
 ?>
-    <?= ($count > 6 ? '// ':'') ?>{field: '<?= $col['field'] ?>', title: '<?= $col['label'] ?>' <?= $col['sort'] ? ", sort: '{$col['field']}'":'' ?>, width: <?= $col['width'] ?>},
+    <?= ($count > 6 ? '// ':'') ?>{field: '<?= $col['field'] ?>', title: '<?= $col['label'] ?>' <?= $col['sort'] ? ", sort: '{$col['field']}'":'' ?>, filter: true, width: <?= $col['width'] ?>},
 <?php endforeach; ?>
     {field: 'action', title: 'Action', filter: false, width: 100},
 ];

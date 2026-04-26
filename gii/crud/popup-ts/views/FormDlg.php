@@ -1,6 +1,5 @@
 <?php
 
-use yii\helpers\Html;
 use yii\helpers\StringHelper;
 
 /** @var yii\web\View $this */
@@ -11,10 +10,11 @@ $baseRoute = $generator->controllerID;
 $class = $generator->modelClass;
 $inputChunks = array_chunk($inputs, 2);
 ?>
-<script setup>
+<script setup lang="ts">
 import { router } from "@inertiajs/vue3";
 import { ref } from 'vue';
 import { useVForm, required, remote } from "@/composables/form";
+import type { TModel } from "./type";
 const { yiiUrl } = window;
 
 const show = ref(false);
@@ -24,7 +24,7 @@ const form = useVForm({
 <?php endforeach; ?>
 });
 
-function open(row){
+function open(row?: TModel){
     form.$reset(row);
     show.value = true;
 }

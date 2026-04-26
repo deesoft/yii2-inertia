@@ -4,7 +4,7 @@
     "type": "module",
     "description": "Yii2 App inertia js",
     "scripts": {
-        "dev": "vite",
+        "dev": "serve",
         "build": "vite build --base=./",
         "watch": "vite build --watch --base=./"
     },
