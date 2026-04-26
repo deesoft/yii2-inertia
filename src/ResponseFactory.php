@@ -241,8 +241,8 @@ class ResponseFactory extends Component implements \JsonSerializable
                     $props[$_key] = $prop;
                 }
             }
-            return $props;
         }
+        return $props;
     }
 
     /**

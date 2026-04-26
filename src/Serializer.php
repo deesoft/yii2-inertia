@@ -193,7 +193,8 @@ class Serializer
             }
         }
         list($fields, $expand) = static::getRequestedFields();
-        return $model->toArray($fields, $expand);
+        $result = $model->toArray($fields, $expand);
+        return $result ? : (object)[];
     }
 
     /**
