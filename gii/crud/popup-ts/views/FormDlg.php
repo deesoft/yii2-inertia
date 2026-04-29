@@ -14,7 +14,7 @@ $inputChunks = array_chunk($inputs, 2);
 import { router } from "@inertiajs/vue3";
 import { ref } from 'vue';
 import { useVForm, required, remote } from "@/composables/form";
-import type { TModel } from "./type";
+import { TModel } from "./type";
 const { yiiUrl } = window;
 
 const show = ref(false);

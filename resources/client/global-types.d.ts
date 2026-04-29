@@ -1,19 +1,5 @@
+import {TYiiUrl} from '../vendor/deesoft/yii2-client-url/type';
 export { };
-
-interface CreateUrl {
-    (route: string, params?: Record<string, any>, method?: string): string;
-
-    get(route: string, params?: Record<string, any>): string;
-    post(route: string, params?: Record<string, any>): string;
-    put(route: string, params?: Record<string, any>): string;
-    head(route: string, params?: Record<string, any>): string;
-    patch(route: string, params?: Record<string, any>): string;
-    delete(route: string, params?: Record<string, any>): string;
-    base: string;
-    home: string;
-    public(asset: string): string;
-    back(): void;
-}
 
 declare global {
     interface Meta {
@@ -34,6 +20,6 @@ declare global {
         [key: string]: Meta | LinkItem[] | T[];
     }
     interface Window {
-        yiiUrl: CreateUrl;
+        yiiUrl: TYiiUrl;
     }
 }

@@ -27,6 +27,7 @@ class Inertia
         'shared' => [],
         'register_vite_asset' => true,
         'register_yii_url_asset' => true,
+        'manifest_file' => '@client/dist/.vite/manifest.json',
         'vite_port' => '5173',
         'vite_prod' => false,
         'serializer' => [],
@@ -232,10 +233,7 @@ class Inertia
      */
     public static function getVersion()
     {
-        $bundle = Yii::$app->assetManager->getBundle(ViteAsset::class);
-        if ($bundle && $bundle instanceof ViteAsset) {
-            return $bundle->getVersion();
-        }
-        return md5(Yii::getVersion() . Inertia::class);
+        $manifest = Yii::getAlias(Inertia::config('manifest_file'), false);
+        return $manifest && file_exists($manifest) ? hash_file('xxh128', $manifest) : md5(Yii::getVersion() . Inertia::class);
     }
 }

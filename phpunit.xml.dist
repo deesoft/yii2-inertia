@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<phpunit  
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    bootstrap="./tests/bootstrap.php"
+    colors="true"
+    stopOnFailure="false"
+    xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.3/phpunit.xsd"
+    cacheDirectory="./tests/runtime/phpunit.cache"
+    displayDetailsOnIncompleteTests="true"
+    displayDetailsOnSkippedTests="true"
+    displayDetailsOnTestsThatTriggerNotices="true"
+    executionOrder="random"
+    failOnNotice="true"
+    failOnWarning="true"
+    failOnSkipped="true">
+    <testsuites>
+        <testsuite name="Yii2-Inertia">
+            <directory>./tests</directory>
+            <exclude>./tests/runtime</exclude>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>./src</directory>
+        </include>
+        <exclude>
+            <directory>./src/gii</directory>
+        </exclude>
+    </source>
+</phpunit>

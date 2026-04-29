@@ -21,7 +21,7 @@ $viewChunks = array_chunk($views, 2);
 <script setup lang="ts">
 import { router } from '@inertiajs/vue3';
 import { confirm } from "@/composables/global";
-import type { TModel } from "./type";
+import { TModel } from "./type";
 const { yiiUrl } = window;
 
 const props = defineProps<{

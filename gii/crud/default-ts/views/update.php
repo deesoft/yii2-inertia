@@ -15,7 +15,7 @@ $inputChunks = array_chunk($inputs, 2);
 <script setup lang="ts">
 import { required, remote } from "@/composables/form";
 import { useForm, usePage } from "@inertiajs/vue3";
-import type { TModel } from "./type";
+import { TModel } from "./type";
 const { yiiUrl } = window;
 
 const page = usePage();

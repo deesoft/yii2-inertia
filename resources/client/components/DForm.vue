@@ -2,10 +2,11 @@
 import { watch } from 'vue';
 
 const props = defineProps({
-    errors: Object,    
+    errors: Object,
 });
-const emit = defineEmits(['submit', 'validSubmit', 'errorSubmit']);
+const emit = defineEmits(['submit', 'validSubmit', 'errorSubmit', 'remoteError']);
 
+const remoteErrors = ref([]);
 const el = useTemplateRef('el');
 watch(() => props.errors, errors => {
     if (el.value) {
@@ -14,6 +15,12 @@ watch(() => props.errors, errors => {
                 item.errorMessages.push(errors[item.id]);
             }
         });
+        const errs = Object.entries(errors).map(([field, error]) => ({field, error}))
+            .filter(({field}) => !el.value.items.some(item => item.id == field));
+        remoteErrors.value = errs;
+        if(errs.length){
+            emit('remoteError', errs);
+        }
     }
 }, { deep: true });
 
@@ -30,10 +37,11 @@ defineExpose({
     reset: () => el.value.reset(),
     resetValidation: () => el.value.resetValidation(),
     validate: () => el.value.validate(),
+    remoteErrors,
 });
 </script>
 <template>
-    <v-form ref="el" @submit.prevent="onSubmit">
-        <slot></slot>
+    <v-form ref="el" @submit.prevent="onSubmit" v-slot="dataScope">
+        <slot v-bind="{...dataScope, remoteErrors, clearRemoteError: () => remoteErrors = []}"></slot>
     </v-form>
 </template>

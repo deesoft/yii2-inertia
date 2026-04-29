@@ -208,7 +208,7 @@ class ResponseFactory extends Component implements \JsonSerializable
             }
 
             // DeferProp
-            if ($partial && $prop instanceof DeferProp && !$isOnce) {
+            if (!$partial && $prop instanceof DeferProp && !$isOnce) {
                 $this->deferredProps[$prop->group()][] = $key;
             }
 

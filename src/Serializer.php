@@ -57,9 +57,13 @@ class Serializer
     public static function serialize($data, $configs = [])
     {
         static::$configs = $configs ?? [];
+        static::$errors = [];
         $result = static::serializeRecursive($data);
         if(static::$errors){
             $result['errors'] = array_merge(static::$errors, $result['errors'] ?? []);
+        }
+        if(empty($result['errors'])){
+            unset($result['errors']);
         }
         return $result;
     }
@@ -156,7 +160,7 @@ class Serializer
             if ($pageCount > 0) {
                 $links[] = ['label' => 'first', 'href' => $pagination->createUrl(0, null, true), 'active' => $currentPage == 0];
                 if ($currentPage > 0) {
-                    $links[] = ['label' => 'prev', 'href' => $pagination->createUrl($currentPage - 1, null, true)];
+                    $links[] = ['label' => 'prev', 'href' => $pagination->createUrl($currentPage - 1, null, true), 'active' => false];
                 }
                 $beginPage = max(0, $currentPage - (int) ($maxPageButton / 2));
                 if (($endPage = $beginPage + $maxPageButton - 1) >= $pageCount) {
@@ -167,7 +171,7 @@ class Serializer
                     $links[] = ['label' => $i + 1, 'href' => $pagination->createUrl($i, null, true), 'active' => $currentPage == $i];
                 }
                 if ($currentPage < $pageCount - 1) {
-                    $links[] = ['label' => 'next', 'href' => $pagination->createUrl($currentPage + 1, null, true)];
+                    $links[] = ['label' => 'next', 'href' => $pagination->createUrl($currentPage + 1, null, true), 'active' => false];
                 }
                 $links[] = ['label' => 'last', 'href' => $pagination->createUrl($pageCount - 1, null, true), 'active' => $currentPage == $pageCount - 1];
             }

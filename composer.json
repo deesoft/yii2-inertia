@@ -18,6 +18,10 @@
         "deesoft/yii2-client-url": "*",
         "phpspec/php-diff": "^1.1.0"
     },
+    "require-dev": {
+        "yiisoft/yii2-gii": "^2.2",
+        "phpunit/phpunit": "^12.5"
+    },
     "autoload": {
         "psr-4": {
             "dee\\inertia\\": "src",
@@ -45,8 +49,5 @@
             "type": "composer",
             "url": "https://asset-packagist.org"
         }
-    ],
-    "require-dev": {
-        "yiisoft/yii2-gii": "^2.2"
-    }
+    ]
 }
